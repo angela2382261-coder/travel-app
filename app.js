@@ -94,6 +94,7 @@ function render(){
 // =================
 // ⭐ 行程頁（iOS 卡片版）
 // =================
+
 function renderPlan(container){
   const project = appData.projects[0];
 
@@ -105,19 +106,18 @@ function renderPlan(container){
   track.style.transition="0.4s cubic-bezier(0.22,1,0.36,1)";
   slider.appendChild(track);
 
-  let width = 0;
+  // ⭐ 一定要放這裡（全域給 snap 用）
+  const pageWidth = Math.round(window.innerWidth * 0.88);
+  const gap = Math.round(window.innerWidth * 0.06);
+  const step = pageWidth + gap;
 
   project.days.forEach(day=>{
     const page = document.createElement("div");
 
-    // ⭐ iOS 卡片寬度
-    const pageWidth = Math.round(window.innerWidth * 0.88);
-const gap = Math.round(window.innerWidth * 0.06);
-
-page.style.width = pageWidth + "px";
-page.style.marginLeft = gap/2 + "px";
-page.style.marginRight = gap/2 + "px";
-page.style.flexShrink = "0";
+    page.style.width = pageWidth + "px";
+    page.style.marginLeft = gap/2 + "px";
+    page.style.marginRight = gap/2 + "px";
+    page.style.flexShrink = "0";
 
     const card = document.createElement("div");
     card.style.background="#fff";
@@ -140,7 +140,7 @@ page.style.flexShrink = "0";
       row.style.padding="14px 0";
       row.style.borderTop="1px solid #eee";
 
-      // ⭐ 長按
+      // ===== 長按 =====
       let pressTimer;
       let startX=0,startY=0;
 
@@ -163,7 +163,7 @@ page.style.flexShrink = "0";
 
       row.addEventListener("touchend",()=>clearTimeout(pressTimer));
 
-      // 上排
+      // ===== UI =====
       const top = document.createElement("div");
       top.style.display="flex";
       top.style.alignItems="flex-start";
@@ -172,7 +172,7 @@ page.style.flexShrink = "0";
       const cb = document.createElement("input");
       cb.type="checkbox";
       cb.checked=act.done;
-      cb.style.transform="scale(1.3)";
+      cb.style.transform="scale(1.2)";
 
       cb.onchange=async()=>{
         act.done=cb.checked;
@@ -186,7 +186,6 @@ page.style.flexShrink = "0";
       const name = document.createElement("div");
       name.innerText=act.name;
       name.style.fontWeight="700";
-      name.style.fontSize="18px";
 
       const price = document.createElement("div");
       price.innerText=`¥${act.cost}`;
@@ -199,6 +198,7 @@ page.style.flexShrink = "0";
       info.appendChild(name);
       info.appendChild(price);
 
+      // 備註
       if(act.note){
         const note=document.createElement("div");
         note.innerText=act.note;
@@ -208,6 +208,7 @@ page.style.flexShrink = "0";
         info.appendChild(note);
       }
 
+      // tag
       const tagWrap=document.createElement("div");
       tagWrap.style.marginTop="6px";
 
@@ -230,6 +231,7 @@ page.style.flexShrink = "0";
 
       info.appendChild(tagWrap);
 
+      // 地圖
       const mapBtn=document.createElement("button");
       mapBtn.innerText="📍";
       mapBtn.style.marginLeft="auto";
@@ -253,34 +255,27 @@ page.style.flexShrink = "0";
 
   container.appendChild(slider);
 
-  // ⭐ 定位 + 縮放
+  // ===== 修正定位 =====
   function snap(){
-    const step = pageWidth + gap;
+    track.style.transform = `translateX(-${currentDayIndex * step}px)`;
 
-track.style.transform = `translateX(-${currentDayIndex * step}px)`;
-    requestAnimationFrame(() => {
-  track.style.transform = `translateX(-${currentDayIndex * step}px)`;
-});
-
-    updateScale();
-  }
-
-  function updateScale(){
-  const pages = track.children;
-  for(let i=0;i<pages.length;i++){
-    pages[i].style.transform = i===currentDayIndex
-      ? "scale(1)"
-      : "scale(0.94)";
-    pages[i].style.opacity = i===currentDayIndex ? "1" : "0.5";
-  }
-}
+    const pages = track.children;
+    for(let i=0;i<pages.length;i++){
+      pages[i].style.transform = i===currentDayIndex
+        ? "scale(1)"
+        : "scale(0.94)";
+      pages[i].style.opacity = i===currentDayIndex ? "1" : "0.5";
+    }
   }
 
   requestAnimationFrame(snap);
 
-  // ⭐ 滑動
+  // ===== 滑動 =====
   let start=0;
-  slider.ontouchstart=e=>start=e.touches[0].clientX;
+
+  slider.ontouchstart=e=>{
+    start=e.touches[0].clientX;
+  };
 
   slider.ontouchend=e=>{
     const diff=start-e.changedTouches[0].clientX;
@@ -293,6 +288,7 @@ track.style.transform = `translateX(-${currentDayIndex * step}px)`;
     snap();
   };
 }
+  
 
 // =================
 // 統計
