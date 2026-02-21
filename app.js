@@ -249,29 +249,53 @@ function renderStats(container){
 // =================
 // tab
 // =================
-function renderTabBar(){
-  let bar=document.querySelector(".tabbar");
-  if(bar) bar.remove();
+function renderTabBar() {
+  // 移除舊的
+  const old = document.getElementById("tabbar");
+  if (old) old.remove();
 
-  bar=document.createElement("div");
-  bar.style.position="fixed";
-  bar.style.bottom="0";
-  bar.style.display="flex";
-  bar.style.width="100%";
-  bar.style.background="#fff";
+  const tabbar = document.createElement("div");
+  tabbar.id = "tabbar";
 
-  const t1=document.createElement("div");
-  t1.innerText="行程";
-  t1.onclick=()=>{currentTab="plan";render();};
+  // ⭐ iOS safe-area + 不被 Safari 擋住
+  tabbar.style.cssText = `
+    position: fixed;
+    left: 0; right: 0;
+    bottom: 0;
+    height: 72px;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(0,0,0,0.06);
+    display: flex;
+    z-index: 999999;
+  `;
 
-  const t2=document.createElement("div");
-  t2.innerText="統計";
-  t2.onclick=()=>{currentTab="stats";render();};
+  const mkTab = (key, icon, label) => {
+    const t = document.createElement("button");
+    t.type = "button";
+    t.style.cssText = `
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 10px 0 8px;
+      font-size: 12px;
+      color: ${currentTab === key ? "#007aff" : "#8e8e93"};
+      font-weight: ${currentTab === key ? "700" : "500"};
+    `;
+    t.innerHTML = `<div style="font-size:20px; line-height:20px;">${icon}</div><div>${label}</div>`;
+    t.onclick = () => {
+      currentTab = key;
+      render();
+    };
+    return t;
+  };
 
-  bar.appendChild(t1);
-  bar.appendChild(t2);
+  tabbar.appendChild(mkTab("plan", "🗓", "行程"));
+  tabbar.appendChild(mkTab("stats", "📊", "統計"));
 
-  document.body.appendChild(bar);
+  document.body.appendChild(tabbar);
 }
 
 // =================
