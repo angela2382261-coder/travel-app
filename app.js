@@ -1,3 +1,4 @@
+
 const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
 
 let appData = null;
@@ -77,40 +78,10 @@ function parseNoteTags(note){
   return t;
 }
 
-const CATEGORY_COLORS = {
-  食物: [
-    ["#fee2e2","#b91c1c"],
-    ["#fecaca","#991b1b"],
-    ["#fca5a5","#7f1d1d"]
-  ],
-  景點: [
-    ["#dbeafe","#1d4ed8"],
-    ["#bfdbfe","#1e40af"],
-    ["#93c5fd","#1e3a8a"]
-  ],
-  交通: [
-    ["#fef3c7","#92400e"],
-    ["#fde68a","#78350f"],
-    ["#fcd34d","#713f12"]
-  ],
-  飯店: [
-    ["#dcfce7","#166534"],
-    ["#bbf7d0","#14532d"],
-    ["#86efac","#052e16"]
-  ],
-  其他: [
-    ["#e5e7eb","#374151"],
-    ["#d1d5db","#1f2937"],
-    ["#9ca3af","#111827"]
-  ]
-};
-
-
 // =================
 // 主 render
 // =================
 function render(){
-  for (let k in categoryColorIndex) delete categoryColorIndex[k];
   const app = document.getElementById("app");
   app.innerHTML = "";
   app.style.paddingBottom="90px";
@@ -239,38 +210,15 @@ function renderPlan(container){
         info.appendChild(note);
       }
 
-const categoryColorIndex = {};
-
-function getTagColor(category){
-  const pool = CATEGORY_COLORS[category] || CATEGORY_COLORS["其他"];
-
-  if(!categoryColorIndex[category]){
-    categoryColorIndex[category] = 0;
-  }
-
-  const index = categoryColorIndex[category] % pool.length;
-  categoryColorIndex[category]++;
-
-  return pool[index];
-}
-      
-
       // tag
       const tagWrap=document.createElement("div");
       tagWrap.style.marginTop="6px";
 
-      const cat = document.createElement("span");
-cat.innerText = act.category;
-
-const [bg, color] = getTagColor(act.category);
-
-cat.style.background = bg;
-cat.style.color = color;
-cat.style.padding = "4px 10px";
-cat.style.borderRadius = "999px";
-cat.style.fontSize = "12px";
-cat.style.fontWeight = "700";
-      
+      const cat=document.createElement("span");
+      cat.innerText=act.category;
+      cat.style.background="#eee";
+      cat.style.padding="4px 8px";
+      cat.style.borderRadius="999px";
       tagWrap.appendChild(cat);
 
       parseNoteTags(act.note).forEach(t=>{
