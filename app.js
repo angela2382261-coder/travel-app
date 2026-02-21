@@ -169,94 +169,98 @@ function renderPlan(container) {
     title.style.fontSize = "28px";
     title.style.fontWeight = "800";
     card.appendChild(title);
-day.activities.forEach((act) => {
+
+   day.activities.forEach((act) => {
   const key = act.id;
 
   // =================
-  // row：一列（主容器）
+  // Row（整列）
   // =================
   const row = document.createElement("div");
   row.style.display = "flex";
-  row.style.flexDirection = "column";
+  row.style.flexDirection = "column";   // ⭐ 上面主內容 + 下面 detail
   row.style.padding = "14px 0";
   row.style.borderTop = "1px solid #eee";
-  row.style.width = "100%";
-
-  // ✅ 防止 iOS 長按出現選字放大鏡
-  row.style.webkitUserSelect = "none";
-  row.style.userSelect = "none";
 
   // =================
-  // top：上排（checkbox + 內容 + map）
+  // 主內容 top（checkbox + 文字 + 地圖）
   // =================
   const top = document.createElement("div");
   top.style.display = "flex";
-  top.style.alignItems = "flex-start";
+  top.style.alignItems = "center";
   top.style.gap = "12px";
-  top.style.width = "100%";
 
-  // =================
-  // left：左側（checkbox + 文字）
-  // =================
-  const left = document.createElement("div");
-  left.style.display = "flex";
-  left.style.alignItems = "flex-start";
-  left.style.gap = "12px";
-  left.style.flex = "1";
-  left.style.minWidth = "0"; // ⭐關鍵：避免 mapBtn 被擠到中間
-
-  // checkbox
+  // checkbox（固定）
   const cb = document.createElement("input");
   cb.type = "checkbox";
   cb.checked = act.done;
   cb.style.transform = "scale(1.35)";
-  cb.style.marginTop = "6px";
+  cb.style.flex = "0 0 auto";
+  cb.style.marginTop = "2px";
 
-  cb.onchange = async () => {
-    act.done = cb.checked;
-    render();
+  cb.onchange = async (e) => {
+    e.stopPropagation(); // ⭐避免勾選也觸發展開
+    // 輕微動畫
+    row.style.transform = "scale(0.98)";
+    row.style.opacity = "0.7";
+    setTimeout(() => {
+      act.done = cb.checked;
+      render();
+    }, 120);
+
     await updateActivity(act.id, cb.checked);
   };
 
-  // info：文字區
+  // info（可縮，避免爆版）
   const info = document.createElement("div");
-  info.style.flex = "1";
-  info.style.minWidth = "0"; // ⭐避免文字把版面撐爆
+  info.style.flex = "1 1 auto";
+  info.style.minWidth = "0"; // ⭐關鍵：讓文字可以在 flex 裡縮
+  info.style.display = "flex";
+  info.style.flexDirection = "column";
+  info.style.gap = "8px";
 
-  // name
+  // 第一行：名稱 + 金額（同一行，金額有底色）
+  const line1 = document.createElement("div");
+  line1.style.display = "flex";
+  line1.style.alignItems = "center";
+  line1.style.gap = "10px";
+  line1.style.minWidth = "0";
+
   const name = document.createElement("div");
   name.innerText = act.name;
   name.style.fontSize = "20px";
   name.style.fontWeight = "700";
   name.style.lineHeight = "1.25";
+  name.style.minWidth = "0";
+  name.style.flex = "1 1 auto";
   name.style.wordBreak = "break-word";
 
-  // price（膠囊底色，跟行程區更好分辨）
-  const price = document.createElement("span");
+  const price = document.createElement("div");
   price.innerText = `¥${Number(act.cost || 0).toLocaleString()}`;
-  price.style.display = "inline-block";
-  price.style.marginTop = "8px";
-  price.style.padding = "6px 12px";
+  price.style.flex = "0 0 auto";
+  price.style.fontSize = "15px";
+  price.style.fontWeight = "800";
+  price.style.padding = "6px 10px";
   price.style.borderRadius = "999px";
-  price.style.background = "#eef4ff";   // ⭐金額底色（跟行程不同）
-  price.style.color = "#2563eb";
-  price.style.fontWeight = "700";
-  price.style.fontSize = "16px";
+  price.style.background = "#e0f2fe";     // ⭐金額底色（跟行程區分）
+  price.style.color = "#075985";
 
-  // tags（分類 + 交通備註）
+  line1.appendChild(name);
+  line1.appendChild(price);
+
+  // tags
   const tagWrap = document.createElement("div");
-  tagWrap.style.marginTop = "8px";
   tagWrap.style.display = "flex";
   tagWrap.style.flexWrap = "wrap";
   tagWrap.style.gap = "6px";
 
-  // 分類 tag
+  // 分類 tag（顏色）
   const catTag = document.createElement("span");
   catTag.innerText = act.category || "其他";
   catTag.style.fontSize = "12px";
   catTag.style.padding = "5px 10px";
   catTag.style.borderRadius = "999px";
-  catTag.style.fontWeight = "600";
+  catTag.style.fontWeight = "700";
 
   if (act.category === "食物") {
     catTag.style.background = "#fee2e2"; catTag.style.color = "#b91c1c";
@@ -267,7 +271,7 @@ day.activities.forEach((act) => {
   } else if (act.category === "飯店") {
     catTag.style.background = "#dcfce7"; catTag.style.color = "#166534";
   } else {
-    catTag.style.background = "#f1f5f9"; catTag.style.color = "#334155";
+    catTag.style.background = "#e5e7eb"; catTag.style.color = "#374151";
   }
 
   tagWrap.appendChild(catTag);
@@ -279,103 +283,95 @@ day.activities.forEach((act) => {
     tag.style.fontSize = "12px";
     tag.style.padding = "5px 10px";
     tag.style.borderRadius = "999px";
-    tag.style.background = "#f1f5f9";
-    tag.style.color = "#334155";
+    tag.style.background = "#eef2ff";
+    tag.style.color = "#3730a3";
     tagWrap.appendChild(tag);
   });
 
-  info.appendChild(name);
-  info.appendChild(price);
+  info.appendChild(line1);
   info.appendChild(tagWrap);
 
+  // done 狀態
   if (act.done) {
     name.style.textDecoration = "line-through";
-    info.style.opacity = "0.55";
+    name.style.color = "#9ca3af";
+    price.style.opacity = "0.6";
+    tagWrap.style.opacity = "0.6";
   }
 
-  left.appendChild(cb);
-  left.appendChild(info);
-
-  // =================
-  // 📍 map 按鈕（固定在右側，不亂跑）
-  // =================
+  // 地圖按鈕（永遠在最右）
   const mapBtn = document.createElement("button");
   mapBtn.innerText = "📍";
+  mapBtn.style.flex = "0 0 auto";
+  mapBtn.style.marginLeft = "auto";
   mapBtn.style.border = "none";
   mapBtn.style.background = "#f1f5f9";
   mapBtn.style.borderRadius = "14px";
   mapBtn.style.padding = "10px 12px";
   mapBtn.style.fontSize = "18px";
   mapBtn.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)";
-  mapBtn.style.flexShrink = "0"; // ⭐關鍵：永遠不被壓扁
 
   mapBtn.onclick = (e) => {
-    e.stopPropagation(); // ⭐避免觸發展開/收合
+    e.stopPropagation(); // ⭐避免點📍也展開
     if (act.map) window.open(act.map, "_blank");
   };
 
-  top.appendChild(left);
+  top.appendChild(cb);
+  top.appendChild(info);
   top.appendChild(mapBtn);
 
   // =================
-  // detail：展開區（備註/提示）
+  // detail（展開區）
   // =================
   const detail = document.createElement("div");
   detail.style.maxHeight = expanded[key] ? "220px" : "0";
   detail.style.overflow = "hidden";
-  detail.style.transition = "max-height 0.25s ease";
+  detail.style.transition = "max-height 0.28s ease";
   detail.style.fontSize = "14px";
-  detail.style.color = "#666";
-  detail.style.paddingLeft = "48px";
-  detail.style.paddingTop = expanded[key] ? "10px" : "0";
+  detail.style.color = "#64748b";
+  detail.style.paddingLeft = "42px"; // 對齊文字區
 
-  detail.innerHTML = `
-    ${act.note ? "📝 " + act.note + "<br>" : ""}
-    ${act.map ? "📍 點右側可開地圖" : ""}
-  `;
+  // 內容
+  const noteText = act.note ? `📝 ${act.note}` : "";
+  const hintText = act.map ? `📍 點右側可開地圖` : "";
+  detail.innerHTML = [noteText, hintText].filter(Boolean).join("<br>");
 
   // =================
-  // ✅ 點一下：展開/收合
+  // 點一下展開/收合
   // =================
-  row.addEventListener("click", () => {
+  row.onclick = () => {
     expanded[key] = !expanded[key];
     render();
-  });
+  };
 
   // =================
-  // ✅ 長按 450ms：開編輯 openEditor(act)
+  // 長按開編輯（只留一份）
   // =================
   let pressTimer = null;
-  let isLongPress = false;
 
-  row.addEventListener("touchstart", (e) => {
-    // ⚠️ iOS 要用 passive:false 才能 preventDefault
-    e.stopPropagation();
-    isLongPress = false;
-
-    pressTimer = setTimeout(() => {
-      isLongPress = true;
-      openEditor(act); // ⭐你的編輯視窗 function
-    }, 450);
-  }, { passive: false });
+  row.addEventListener("touchstart", () => {
+    pressTimer = setTimeout(() => openEditor(act), 450);
+  }, { passive: true });
 
   row.addEventListener("touchend", () => {
     clearTimeout(pressTimer);
-    // 如果你不想 touchend 也觸發 click，這裡保險擋一下
-    // （避免長按後又展開/收合）
-    if (isLongPress) return;
   }, { passive: true });
 
   row.addEventListener("touchmove", () => {
     clearTimeout(pressTimer);
   }, { passive: true });
 
+  // 組起來
   row.appendChild(top);
   row.appendChild(detail);
-
   card.appendChild(row);
 });
-   
+    page.appendChild(card);
+    track.appendChild(page);
+  });
+
+  container.appendChild(slider);
+
   // =================
   // 🔵 點點
   // =================
