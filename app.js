@@ -103,9 +103,16 @@ function parseNoteTags(note){
 // 主 render
 // =================
 function render(){
-  const app = document.getElementById("app");
+ const app = document.getElementById("app");
+
+// ⭐⭐⭐ 加這段 ⭐⭐⭐
+app.style.maxWidth = "420px";
+app.style.margin = "0 auto";
+app.style.padding = "0 12px";
+  document.body.style.background = "#f2f2f7"; // iOS 背景灰
   app.innerHTML = "";
-  app.style.paddingBottom="90px";
+  app.style.paddingTop = "10px";
+app.style.paddingBottom = "100px";
 
   if(currentTab==="plan") renderPlan(app);
   else renderStats(app);
