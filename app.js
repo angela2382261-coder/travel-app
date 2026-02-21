@@ -112,7 +112,7 @@ app.style.margin = "0 auto";
 app.style.padding = "0 12px";
   document.body.style.background = "#f2f2f7"; // iOS 背景灰
   app.innerHTML = "";
-  app.style.paddingTop = "10px";
+  app.style.paddingTop = "max(20px, env(safe-area-inset-top))";
 app.style.paddingBottom = "100px";
 
   if(currentTab==="plan") renderPlan(app);
