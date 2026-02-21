@@ -1,3 +1,4 @@
+
 const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
 
 let appData = null;
@@ -104,7 +105,7 @@ function parseNoteTags(note){
 // =================
 function render(){
  const app = document.getElementById("app");
-app.style.paddingTop = "max(20px, env(safe-area-inset-top))";
+
 // ⭐⭐⭐ 加這段 ⭐⭐⭐
 app.style.maxWidth = "420px";
 app.style.margin = "0 auto";
@@ -112,7 +113,7 @@ app.style.padding = "0 12px";
   document.body.style.background = "#f2f2f7"; // iOS 背景灰
   app.innerHTML = "";
   app.style.paddingTop = "10px";
-app.style.paddingBottom = "120px";
+app.style.paddingBottom = "100px";
 
   if(currentTab==="plan") renderPlan(app);
   else renderStats(app);
@@ -150,7 +151,6 @@ function renderPlan(container){
     card.style.background="#fff";
     card.style.borderRadius="26px";
     card.style.padding="18px";
-
     card.style.boxShadow = "0 20px 40px rgba(0,0,0,0.12)";
 card.style.border = "1px solid rgba(255,255,255,0.4)";
 card.style.backdropFilter = "blur(10px)";
@@ -370,7 +370,6 @@ tag.style.border = "1px solid rgba(255,255,255,0.4)";
 // 統計
 // =================
 function renderStats(container){
-  container.style.paddingTop = "max(20px, env(safe-area-inset-top))";
   const p = appData.projects[0];
 
   let total = 0;
@@ -385,23 +384,9 @@ function renderStats(container){
     });
   });
 
-  if(total === 0){
-  const empty = document.createElement("div");
-  empty.innerText = "尚未開始花費";
-  empty.style.textAlign = "center";
-  empty.style.color = "#999";
-  empty.style.marginTop = "40px";
-  empty.style.fontSize = "14px";
-
-  layout.appendChild(empty);
-}
-
   const card = document.createElement("div");
   card.style.background="#fff";
-  card.style.margin = "20px auto";
-card.style.maxWidth = "500px";
-card.style.minHeight = "auto";
-    
+  card.style.margin="16px";
   card.style.padding="16px";
   card.style.borderRadius="20px";
   card.style.boxShadow="0 10px 30px rgba(0,0,0,0.08)";
@@ -417,35 +402,22 @@ card.style.minHeight = "auto";
   // ===== summary =====
   const summary = document.createElement("div");
   summary.innerHTML = `💰 ¥${total.toLocaleString()} / ¥${p.budget.total}`;
-summary.style.fontSize = "18px";
-summary.style.fontWeight = "700";
-summary.style.background = "#f1f5f9";
-summary.style.padding = "10px 14px";
-summary.style.borderRadius = "12px";
-summary.style.display = "inline-block";
+  summary.style.marginBottom="12px";
+  summary.style.fontSize="16px";
+  card.appendChild(summary);
 
   // ===== layout =====
   const layout = document.createElement("div");
   layout.style.display="flex";
   layout.style.gap="16px";
   layout.style.flexWrap="wrap";
-  layout.style.alignItems = "center";
-layout.style.justifyContent = "center";
   card.appendChild(layout);
 
   // ===== canvas =====
   const canvas = document.createElement("canvas");
   canvas.width = 220;
-  canvas.height = 220;  q`
-  const chartWrap = document.createElement("div");
-chartWrap.style.display = "flex";
-chartWrap.style.flexDirection = "column";
-chartWrap.style.alignItems = "center";
-chartWrap.style.marginTop = "10px";
-chartWrap.style.marginBottom = "10px";
-
-chartWrap.appendChild(canvas);
-layout.appendChild(chartWrap);
+  canvas.height = 220;
+  layout.appendChild(canvas);
 
   const list = document.createElement("div");
   list.style.flex="1";
@@ -560,9 +532,7 @@ function renderTabBar(){
   bar.style.bottom="0";
   bar.style.width="100%";
   bar.style.display="flex";
-bar.style.padding = "14px 0 calc(20px + env(safe-area-inset-bottom))";
-bar.style.backdropFilter = "blur(20px)";
-bar.style.background = "rgba(255,255,255,0.85)";
+  bar.style.background="#fff";
   bar.style.borderTop="1px solid #eee";
 
   const mk=(k,t)=>{
