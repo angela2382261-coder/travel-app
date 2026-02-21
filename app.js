@@ -77,6 +77,21 @@ function parseNoteTags(note){
   if(note.includes("步行")) t.push("🚶 步行");
   return t;
 }
+//分類顏色
+  function getCategoryStyle(cat){
+  switch(cat){
+    case "食物":
+      return { bg:"#fee2e2", color:"#b91c1c" }; // 紅
+    case "景點":
+      return { bg:"#dbeafe", color:"#1d4ed8" }; // 藍
+    case "交通":
+      return { bg:"#fef3c7", color:"#92400e" }; // 黃
+    case "飯店":
+      return { bg:"#dcfce7", color:"#166534" }; // 綠
+    default:
+      return { bg:"#e5e7eb", color:"#374151" }; // 灰
+  }
+}
 
 // =================
 // 主 render
@@ -416,21 +431,6 @@ function renderStats(container){
     ctx.fillText(`¥${total.toLocaleString()}`,110,125);
   }
 
-//分類顏色
-  function getCategoryStyle(cat){
-  switch(cat){
-    case "食物":
-      return { bg:"#fee2e2", color:"#b91c1c" }; // 紅
-    case "景點":
-      return { bg:"#dbeafe", color:"#1d4ed8" }; // 藍
-    case "交通":
-      return { bg:"#fef3c7", color:"#92400e" }; // 黃
-    case "飯店":
-      return { bg:"#dcfce7", color:"#166534" }; // 綠
-    default:
-      return { bg:"#e5e7eb", color:"#374151" }; // 灰
-  }
-}
 
 
   
