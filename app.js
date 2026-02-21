@@ -3,6 +3,9 @@ const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L4
 let appData = null;
 let openState = {};
 let currentTab = "plan"; // plan / stats
+let currentDayIndex = 0;
+let startX = 0;
+let currentTranslate = 0;
 
 // =================
 // ⏳ Loading
@@ -100,43 +103,33 @@ function render() {
 
   renderTabBar();
 }
-
 function renderPlan(container) {
   const project = appData.projects[0];
 
-  let total = 0;
-  project.days.forEach(day => {
-    day.activities.forEach(a => {
-      if (a.done) total += a.cost;
-    });
-  });
+  const slider = document.createElement("div");
+  slider.style.overflow = "hidden";
+  slider.style.position = "relative";
 
-  const budget = document.createElement("div");
-  budget.className = "budget";
-  budget.innerHTML = `💰 ¥${total} / ¥${project.budget.total}`;
-  container.appendChild(budget);
+  const track = document.createElement("div");
+  track.style.display = "flex";
+  track.style.transition = "transform 0.35s ease";
+
+  slider.appendChild(track);
 
   project.days.forEach((day, index) => {
 
-    if (openState[index] === undefined) openState[index] = true;
+    const page = document.createElement("div");
+    page.style.minWidth = "100%";
+    page.style.padding = "10px";
+    page.style.transition = "transform 0.3s";
 
     const card = document.createElement("div");
     card.className = "card";
 
-    const doneCount = day.activities.filter(a => a.done).length;
+    const title = document.createElement("h2");
+    title.innerText = day.title;
 
-    const header = document.createElement("div");
-    header.className = "header";
-    header.innerText = `${day.title} (${doneCount}/${day.activities.length})`;
-
-    const content = document.createElement("div");
-    content.className = "content";
-    if (openState[index]) content.classList.add("open");
-
-    header.onclick = () => {
-      openState[index] = !openState[index];
-      render();
-    };
+    card.appendChild(title);
 
     day.activities.forEach(act => {
 
@@ -156,16 +149,6 @@ function renderPlan(container) {
         await updateActivity(act.id, cb.checked);
       };
 
-      const tag = document.createElement("span");
-      tag.className = "tag";
-      tag.innerText = act.category;
-
-      if (act.category === "食物") tag.classList.add("food");
-      else if (act.category === "景點") tag.classList.add("spot");
-      else if (act.category === "交通") tag.classList.add("transport");
-      else if (act.category === "飯店") tag.classList.add("hotel");
-      else tag.classList.add("other");
-
       const text = document.createElement("span");
       text.innerText = `${act.name} ¥${act.cost}`;
 
@@ -175,7 +158,6 @@ function renderPlan(container) {
       }
 
       left.appendChild(cb);
-      left.appendChild(tag);
       left.appendChild(text);
 
       const mapBtn = document.createElement("button");
@@ -187,54 +169,112 @@ function renderPlan(container) {
 
       row.appendChild(left);
       row.appendChild(mapBtn);
-      content.appendChild(row);
+
+      card.appendChild(row);
     });
 
-    card.appendChild(header);
-    card.appendChild(content);
-    container.appendChild(card);
-  });
-}
- function renderStats(container) {
-  const project = appData.projects[0];
-
-  let stats = {};
-  let total = 0;
-
-  project.days.forEach(day => {
-    day.activities.forEach(a => {
-      if (a.done) {
-        total += a.cost;
-
-        if (!stats[a.category]) stats[a.category] = 0;
-        stats[a.category] += a.cost;
-      }
-    });
+    page.appendChild(card);
+    track.appendChild(page);
   });
 
-  const card = document.createElement("div");
-  card.className = "card";
+  // =================
+  // 🎯 初始位置
+  // =================
+  updateSlider();
 
-  const content = document.createElement("div");
-  content.style.padding = "16px";
+  // =================
+  // 👆 手勢（滑動 + 縮放🔥）
+  // =================
+  slider.addEventListener("touchstart", (e) => {
+    startX = e.touches[0].clientX;
+    track.style.transition = "none";
+  });
 
-  content.innerHTML = `<h3>📊 花費統計</h3>`;
+  slider.addEventListener("touchmove", (e) => {
+    const currentX = e.touches[0].clientX;
+    const diff = currentX - startX;
 
-  for (let k in stats) {
-    const row = document.createElement("div");
-    row.innerText = `${k}：¥${stats[k]}`;
-    row.style.marginBottom = "8px";
-    content.appendChild(row);
+    const move = -currentDayIndex * window.innerWidth + diff;
+    track.style.transform = `translateX(${move}px)`;
+
+    // ⭐ 卡片縮放效果
+    const pages = track.children;
+    for (let i = 0; i < pages.length; i++) {
+      const scale = 1 - Math.min(Math.abs(diff) / 500, 0.1);
+      pages[i].style.transform = `scale(${scale})`;
+    }
+  });
+
+  slider.addEventListener("touchend", (e) => {
+    const endX = e.changedTouches[0].clientX;
+    const diff = startX - endX;
+
+    if (diff > 50 && currentDayIndex < project.days.length - 1) {
+      currentDayIndex++;
+    }
+
+    if (diff < -50 && currentDayIndex > 0) {
+      currentDayIndex--;
+    }
+
+    updateSlider();
+  });
+
+  container.appendChild(slider);
+
+  // =================
+  // 🔘 左右按鈕
+  // =================
+  const leftBtn = document.createElement("button");
+  leftBtn.innerText = "←";
+  leftBtn.style.position = "absolute";
+  leftBtn.style.left = "10px";
+  leftBtn.style.top = "50%";
+  leftBtn.style.transform = "translateY(-50%)";
+  leftBtn.style.fontSize = "20px";
+
+  leftBtn.onclick = () => {
+    if (currentDayIndex > 0) {
+      currentDayIndex--;
+      updateSlider();
+    }
+  };
+
+  const rightBtn = document.createElement("button");
+  rightBtn.innerText = "→";
+  rightBtn.style.position = "absolute";
+  rightBtn.style.right = "10px";
+  rightBtn.style.top = "50%";
+  rightBtn.style.transform = "translateY(-50%)";
+  rightBtn.style.fontSize = "20px";
+
+  rightBtn.onclick = () => {
+    if (currentDayIndex < project.days.length - 1) {
+      currentDayIndex++;
+      updateSlider();
+    }
+  };
+
+  slider.appendChild(leftBtn);
+  slider.appendChild(rightBtn);
+
+  // =================
+  // 🔧 更新位置
+  // =================
+  function updateSlider() {
+    track.style.transition = "transform 0.35s ease";
+    track.style.transform = `translateX(-${currentDayIndex * 100}%)`;
+
+    // 恢復縮放
+    const pages = track.children;
+    for (let i = 0; i < pages.length; i++) {
+      pages[i].style.transform = "scale(1)";
+    }
   }
-
-  const totalDiv = document.createElement("div");
-  totalDiv.style.marginTop = "10px";
-  totalDiv.innerHTML = `💰 總計：¥${total}`;
-  content.appendChild(totalDiv);
-
-  card.appendChild(content);
-  container.appendChild(card);
 }
+
+
+
 function renderTabBar() {
   let old = document.querySelector(".tabbar");
   if (old) old.remove();
