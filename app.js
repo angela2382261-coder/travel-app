@@ -191,7 +191,7 @@ function renderPlan(container){
 
       const price = document.createElement("div");
       price.innerText=`¥${act.cost}`;
-      price.style.background="#FFD306";
+      price.style.background="#eee";
       price.style.display="inline-block";
       price.style.padding="6px 12px";
       price.style.borderRadius="999px";
