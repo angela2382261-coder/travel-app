@@ -178,10 +178,24 @@ function renderPlan(container) {
   // 卡片 Row
   // =================
   const row = document.createElement("div");
+  row.style.display = "flex";
+  row.style.justifyContent = "space-between";
+  row.style.alignItems = "center";
   row.style.padding = "14px 0";
-  row.style.borderTop = "1px solid #f1f1f1";
-  row.style.transition = "all 0.25s ease";
+  row.style.borderTop = "1px solid #eee";
 
+  // ⭐⭐⭐ 這段就加在這裡 ⭐⭐⭐
+  row.addEventListener("touchstart", () => {
+    pressTimer = setTimeout(() => openEditor(act), 450);
+  }, { passive: true });
+
+  row.addEventListener("touchend", () => {
+    clearTimeout(pressTimer);
+  }, { passive: true });
+
+  row.addEventListener("touchmove", () => {
+    clearTimeout(pressTimer);
+  }, { passive: true });
   // =================
   // 上層（主內容）
   // =================
