@@ -4,9 +4,17 @@ let appData = null;
 
 async function loadFromSheet() {
   const res = await fetch(
-    "https://api.allorigins.win/raw?url=" + encodeURIComponent(API_URL)
+    "https://corsproxy.io/?" + encodeURIComponent(API_URL)
   );
-  return await res.json();
+
+  const text = await res.text();
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("API 回傳不是 JSON：", text);
+    throw e;
+  }
 }
 
 async function init() {
