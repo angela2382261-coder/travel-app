@@ -3,7 +3,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L4
 let appData = null;
 
 async function loadFromSheet() {
-  const res = await fetch(API_URL);
+  fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(API_URL));
   return await res.json();
 }
 
