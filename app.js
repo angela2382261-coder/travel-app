@@ -2,19 +2,20 @@ const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L4
 
 let appData = null;
 
-async function loadFromSheet() {
-  const res = await fetch(
-    "https://corsproxy.io/?" + encodeURIComponent(API_URL)
-  );
+function loadFromSheet() {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    const callbackName = "jsonpCallback_" + Date.now();
 
-  const text = await res.text();
+    window[callbackName] = function (data) {
+      resolve(data);
+      delete window[callbackName];
+      script.remove();
+    };
 
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    console.error("API 回傳不是 JSON：", text);
-    throw e;
-  }
+    script.src = API_URL + "?callback=" + callbackName;
+    document.body.appendChild(script);
+  });
 }
 
 async function init() {
