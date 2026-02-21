@@ -107,52 +107,65 @@ function render() {
 function renderPlan(container) {
   const project = appData.projects[0];
 
+  // 外層
   const slider = document.createElement("div");
   slider.style.overflow = "hidden";
   slider.style.position = "relative";
-  slider.style.padding = "30px 0";
+  slider.style.padding = "18px 0 8px";
 
+  // 內層軌道
   const track = document.createElement("div");
   track.style.display = "flex";
-  track.style.transition = "transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)";
+  track.style.willChange = "transform";
+  track.style.transition = "transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)";
 
   slider.appendChild(track);
 
-  // =================
-  // 📄 頁面
-  // =================
-  project.days.forEach((day, index) => {
+  // ---- 每頁寬度（做出左右留白的 iOS 卡片感）
+  const pageWidth = Math.round(window.innerWidth * 0.88);
+  const pageGap = Math.round(window.innerWidth * 0.06); // 左右邊距
+  const step = pageWidth + pageGap; // 每次滑動距離
 
+  // 建頁面
+  project.days.forEach((day) => {
     const page = document.createElement("div");
-    page.style.minWidth = "85%";
-    page.style.margin = "0 7.5%";
-    page.style.transition = "transform 0.3s";
+    page.style.width = pageWidth + "px";
+    page.style.marginLeft = pageGap / 2 + "px";
+    page.style.marginRight = pageGap / 2 + "px";
+    page.style.flexShrink = "0";
+    page.style.transition = "transform 0.25s ease";
 
     const card = document.createElement("div");
     card.style.background = "#fff";
-    card.style.borderRadius = "24px";
+    card.style.borderRadius = "26px";
     card.style.padding = "18px";
-    card.style.boxShadow = "0 10px 25px rgba(0,0,0,0.1)";
+    card.style.boxShadow = "0 12px 30px rgba(0,0,0,0.10)";
 
     const title = document.createElement("h2");
     title.innerText = day.title;
-    title.style.marginBottom = "10px";
+    title.style.margin = "0 0 10px";
+    title.style.fontSize = "28px";
+    title.style.fontWeight = "800";
 
     card.appendChild(title);
 
-    day.activities.forEach(act => {
+    day.activities.forEach((act) => {
       const row = document.createElement("div");
       row.style.display = "flex";
       row.style.justifyContent = "space-between";
-      row.style.padding = "12px 0";
+      row.style.alignItems = "center";
+      row.style.padding = "14px 0";
       row.style.borderTop = "1px solid #eee";
 
       const left = document.createElement("div");
+      left.style.display = "flex";
+      left.style.alignItems = "center";
+      left.style.gap = "10px";
 
       const cb = document.createElement("input");
       cb.type = "checkbox";
       cb.checked = act.done;
-      cb.style.transform = "scale(1.3)";
+      cb.style.transform = "scale(1.35)";
 
       cb.onchange = async () => {
         act.done = cb.checked;
@@ -161,7 +174,8 @@ function renderPlan(container) {
       };
 
       const text = document.createElement("span");
-      text.innerText = ` ${act.name} ¥${act.cost}`;
+      text.innerText = `${act.name} ¥${act.cost}`;
+      text.style.fontSize = "20px";
 
       if (act.done) {
         text.style.textDecoration = "line-through";
@@ -173,10 +187,12 @@ function renderPlan(container) {
 
       const mapBtn = document.createElement("button");
       mapBtn.innerText = "📍";
-      mapBtn.style.background = "#eee";
       mapBtn.style.border = "none";
-      mapBtn.style.borderRadius = "10px";
-      mapBtn.style.padding = "6px 10px";
+      mapBtn.style.background = "#f1f1f3";
+      mapBtn.style.borderRadius = "14px";
+      mapBtn.style.padding = "10px 12px";
+      mapBtn.style.fontSize = "18px";
+      mapBtn.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)";
 
       mapBtn.onclick = () => {
         if (act.map) window.open(act.map, "_blank");
@@ -184,7 +200,6 @@ function renderPlan(container) {
 
       row.appendChild(left);
       row.appendChild(mapBtn);
-
       card.appendChild(row);
     });
 
@@ -195,141 +210,114 @@ function renderPlan(container) {
   container.appendChild(slider);
 
   // =================
-  // 🔵 分頁點點（iOS風）
+  // 🔵 點點
   // =================
   const dots = document.createElement("div");
-  dots.style.textAlign = "center";
-  dots.style.marginTop = "10px";
+  dots.style.display = "flex";
+  dots.style.justifyContent = "center";
+  dots.style.gap = "8px";
+  dots.style.margin = "10px 0 0";
+  dots.style.userSelect = "none";
 
-  project.days.forEach((_, i) => {
-    const dot = document.createElement("span");
-    dot.style.display = "inline-block";
-    dot.style.width = "6px";
-    dot.style.height = "6px";
-    dot.style.margin = "0 4px";
-    dot.style.borderRadius = "50%";
-    dot.style.background = i === currentDayIndex ? "#000" : "#ccc";
-    dots.appendChild(dot);
-  });
-
-  container.appendChild(dots);
-
-  // =================
-  // 👆 手勢（含彈性）
-  // =================
-  let velocity = 0;
-  let lastX = 0;
-
-  slider.addEventListener("touchstart", (e) => {
-    startX = e.touches[0].clientX;
-    lastX = startX;
-    track.style.transition = "none";
-  });
-
-  slider.addEventListener("touchmove", (e) => {
-    const currentX = e.touches[0].clientX;
-    const diff = currentX - startX;
-    velocity = currentX - lastX;
-    lastX = currentX;
-
-    let move = -currentDayIndex * window.innerWidth * 0.85 + diff;
-
-    // ⭐ 邊界彈性
-    if (currentDayIndex === 0 && diff > 0) move *= 0.3;
-    if (currentDayIndex === project.days.length - 1 && diff < 0) move *= 0.3;
-
-    track.style.transform = `translateX(${move}px)`;
-
-    // ⭐ iOS縮放視差
-    const pages = track.children;
-    for (let i = 0; i < pages.length; i++) {
-      const offset = i - currentDayIndex;
-      let scale = 0.9;
-
-      if (i === currentDayIndex) {
-        scale = 1 - Math.abs(diff) / 600;
-      } else if (i === currentDayIndex - 1 || i === currentDayIndex + 1) {
-        scale = 0.9 + Math.abs(diff) / 600;
-      }
-
-      pages[i].style.transform = `scale(${scale})`;
-    }
-  });
-
-  slider.addEventListener("touchend", () => {
-    // ⭐ 慣性滑動
-    if (velocity < -5 && currentDayIndex < project.days.length - 1) {
-      currentDayIndex++;
-    } else if (velocity > 5 && currentDayIndex > 0) {
-      currentDayIndex--;
-    }
-
-    updateSlider();
-  });
-
-  function updateSlider() {
-    track.style.transition = "transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)";
-    track.style.transform = `translateX(-${currentDayIndex * 85}%)`;
-
-    const pages = track.children;
-    for (let i = 0; i < pages.length; i++) {
-      pages[i].style.transform = i === currentDayIndex ? "scale(1)" : "scale(0.9)";
-    }
-
-    // 更新 dots
+  function renderDots() {
     dots.innerHTML = "";
     project.days.forEach((_, i) => {
-      const dot = document.createElement("span");
-      dot.style.display = "inline-block";
-      dot.style.width = "6px";
-      dot.style.height = "6px";
-      dot.style.margin = "0 4px";
-      dot.style.borderRadius = "50%";
-      dot.style.background = i === currentDayIndex ? "#000" : "#ccc";
+      const dot = document.createElement("div");
+      dot.style.width = i === currentDayIndex ? "18px" : "7px";
+      dot.style.height = "7px";
+      dot.style.borderRadius = "999px";
+      dot.style.background = i === currentDayIndex ? "#111" : "#c9c9cf";
+      dot.style.transition = "all 0.25s ease";
       dots.appendChild(dot);
     });
   }
 
-  updateSlider();
+  container.appendChild(dots);
 
   // =================
-  // 🔘 箭頭（浮動 iOS）
+  // 🎯 滑動 + iOS 縮放
   // =================
-  const arrowStyle = `
-    position:fixed;
-    top:50%;
-    transform:translateY(-50%);
-    background:rgba(255,255,255,0.8);
-    backdrop-filter:blur(10px);
-    border:none;
-    border-radius:50%;
-    padding:12px;
-    font-size:18px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.1);
-  `;
+  let startX = 0;
+  let dragX = 0;
+  let dragging = false;
 
-  const leftBtn = document.createElement("button");
-  leftBtn.innerText = "←";
-  leftBtn.style.cssText = arrowStyle + "left:10px;";
-  leftBtn.onclick = () => {
-    if (currentDayIndex > 0) {
-      currentDayIndex--;
-      updateSlider();
+  function applyScale(progress = 0) {
+    // progress: 0 ~ 1（拖曳程度）
+    const pages = track.children;
+    for (let i = 0; i < pages.length; i++) {
+      const dist = Math.abs(i - currentDayIndex);
+      let base = dist === 0 ? 1 : 0.94;
+      // 拖曳時，中心卡片縮一點，旁邊放大一點，像 iOS
+      if (dist === 0) base = 1 - 0.05 * progress;
+      if (dist === 1) base = 0.94 + 0.06 * progress;
+      pages[i].style.transform = `scale(${base})`;
     }
-  };
+  }
 
-  const rightBtn = document.createElement("button");
-  rightBtn.innerText = "→";
-  rightBtn.style.cssText = arrowStyle + "right:10px;";
-  rightBtn.onclick = () => {
-    if (currentDayIndex < project.days.length - 1) {
-      currentDayIndex++;
-      updateSlider();
-    }
-  };
+  function updatePos(animated = true) {
+    track.style.transition = animated
+      ? "transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)"
+      : "none";
 
-  container.appendChild(leftBtn);
-  container.appendChild(rightBtn);
+    const x = -currentDayIndex * step;
+    track.style.transform = `translateX(${x}px)`;
+
+    applyScale(0);
+    renderDots();
+  }
+
+  // 初始定位
+  updatePos(true);
+
+  slider.addEventListener(
+    "touchstart",
+    (e) => {
+      dragging = true;
+      startX = e.touches[0].clientX;
+      dragX = 0;
+      track.style.transition = "none";
+    },
+    { passive: true }
+  );
+
+  slider.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!dragging) return;
+      const x = e.touches[0].clientX;
+      dragX = x - startX;
+
+      // 邊界彈性
+      if (currentDayIndex === 0 && dragX > 0) dragX *= 0.35;
+      if (currentDayIndex === project.days.length - 1 && dragX < 0) dragX *= 0.35;
+
+      const base = -currentDayIndex * step;
+      track.style.transform = `translateX(${base + dragX}px)`;
+
+      applyScale(Math.min(Math.abs(dragX) / 260, 1));
+    },
+    { passive: true }
+  );
+
+  slider.addEventListener(
+    "touchend",
+    () => {
+      dragging = false;
+
+      // 決定換頁門檻
+      if (dragX < -60 && currentDayIndex < project.days.length - 1) currentDayIndex++;
+      if (dragX > 60 && currentDayIndex > 0) currentDayIndex--;
+
+      updatePos(true);
+    },
+    { passive: true }
+  );
+
+  // 旋轉螢幕時重算
+  window.addEventListener("resize", () => {
+    // 這裡最保險是直接重 render
+    render();
+  });
 }
 
 function renderTabBar() {
