@@ -229,11 +229,18 @@ price.style.marginTop = "6px";
       const tagWrap=document.createElement("div");
       tagWrap.style.marginTop="6px";
 
-      const cat=document.createElement("span");
-      cat.innerText=act.category;
-      cat.style.background="#eee";
-      cat.style.padding="4px 8px";
-      cat.style.borderRadius="999px";
+      const cat = document.createElement("span");
+cat.innerText = act.category;
+
+const style = getCategoryStyle(act.category);
+
+cat.style.background = style.bg;
+cat.style.color = style.color;
+
+cat.style.padding = "5px 10px";
+cat.style.borderRadius = "999px";
+cat.style.fontSize = "12px";
+cat.style.fontWeight = "700";
       tagWrap.appendChild(cat);
 
       parseNoteTags(act.note).forEach(t=>{
@@ -409,6 +416,24 @@ function renderStats(container){
     ctx.fillText(`¥${total.toLocaleString()}`,110,125);
   }
 
+//分類顏色
+  function getCategoryStyle(cat){
+  switch(cat){
+    case "食物":
+      return { bg:"#fee2e2", color:"#b91c1c" }; // 紅
+    case "景點":
+      return { bg:"#dbeafe", color:"#1d4ed8" }; // 藍
+    case "交通":
+      return { bg:"#fef3c7", color:"#92400e" }; // 黃
+    case "飯店":
+      return { bg:"#dcfce7", color:"#166534" }; // 綠
+    default:
+      return { bg:"#e5e7eb", color:"#374151" }; // 灰
+  }
+}
+
+
+  
   // ===== 動畫 =====
   function animate(){
     progress += 0.05;
