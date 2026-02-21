@@ -1,5 +1,4 @@
-onst API_URL =
-  "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
 
 let appData = null;
 let currentTab = "plan";
@@ -139,39 +138,17 @@ function renderPlan(container){
       row.style.borderTop="1px solid #eee";
 
       // 長按
-      let pressTimer = null;
-let isLongPress = false;
-
-row.addEventListener("touchstart", (e) => {
-  e.stopPropagation(); // ⭐關鍵：不要讓 slider 接手
-
-  isLongPress = false;
-
-  pressTimer = setTimeout(() => {
-    isLongPress = true;
-    openEditor(act);
-  }, 450);
-
-}, { passive: false });
-
-row.addEventListener("touchmove", (e) => {
-  clearTimeout(pressTimer);
-}, { passive: true });
-
-row.addEventListener("touchend", (e) => {
-  clearTimeout(pressTimer);
-
-  if (isLongPress) {
-    e.preventDefault(); // ⭐避免點擊事件
-  }
-}, { passive: false });
+      let timer;
+      row.ontouchstart=()=>{
+        timer=setTimeout(()=>openEditor(act),400);
+      };
+      row.ontouchend=()=>clearTimeout(timer);
 
       const top = document.createElement("div");
       top.style.display="flex";
 
       const left = document.createElement("div");
-      left.style.flex = "1 1 auto";
-left.style.minWidth = "0";
+      left.style.flex=1;
 
       const name = document.createElement("div");
       name.innerText=act.name;
@@ -181,17 +158,8 @@ left.style.minWidth = "0";
       price.style.background="#eef";
       price.style.padding="4px 10px";
       price.style.borderRadius="10px";
-      price.style.background = "#eef4ff";
-price.style.color = "#2563eb";
-price.style.fontWeight = "700";
-price.style.borderRadius = "999px";
-price.style.padding = "6px 12px";
 
       const tagWrap=document.createElement("div");
-      tagWrap.style.display = "flex";
-tagWrap.style.flexWrap = "wrap";
-tagWrap.style.gap = "6px";
-tagWrap.style.marginTop = "6px";
 
       const cat=document.createElement("span");
       cat.innerText=act.category;
@@ -212,8 +180,6 @@ tagWrap.style.marginTop = "6px";
       const mapBtn=document.createElement("button");
       mapBtn.innerText="📍";
       mapBtn.onclick=()=>window.open(act.map);
-      mapBtn.style.flexShrink = "0";
-mapBtn.style.marginLeft = "auto";
 
       top.appendChild(left);
       top.appendChild(mapBtn);
@@ -233,18 +199,15 @@ mapBtn.style.marginLeft = "auto";
 
   slider.ontouchstart=e=>{
     startX=e.touches[0].clientX;
-    slider.style.transition = "none";
   };
 
   slider.ontouchend=e=>{
-    slider.style.transition = "transform 0.4s ease";
     const diff=e.changedTouches[0].clientX-startX;
     if(diff<-50) currentDayIndex++;
     if(diff>50) currentDayIndex--;
 
     currentDayIndex=Math.max(0,Math.min(currentDayIndex,project.days.length-1));
     track.style.transform=`translateX(-${currentDayIndex*100}%)`;
-    
   };
 }
 
@@ -354,3 +317,5 @@ function openEditor(act){
   document.body.appendChild(overlay);
   document.body.appendChild(modal);
 }
+
+  
