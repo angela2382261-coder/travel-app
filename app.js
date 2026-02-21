@@ -211,7 +211,9 @@ function renderPlan(container) {
       }
 
       const tagWrap = document.createElement("div");
-
+tagWrap.style.display = "flex";
+tagWrap.style.flexWrap = "wrap";
+tagWrap.style.gap = "6px";
       const cat = document.createElement("span");
       cat.innerText = act.category;
       cat.style.background = "#eee";
@@ -224,6 +226,7 @@ function renderPlan(container) {
         const tag = document.createElement("span");
         tag.innerText = t;
         tag.style.marginLeft = "6px";
+        tag.style.display = "inline-block";
         tag.style.background = "#eef2ff";
         tag.style.padding = "4px 8px";
         tag.style.borderRadius = "999px";
@@ -250,7 +253,7 @@ function renderPlan(container) {
 
   function snap() {
     track.style.transform =
-      `translateX(${-(currentDayIndex * (pageWidth + gap)) + gap / 2}px)`;
+  `translateX(${-(currentDayIndex * (pageWidth + gap)) + gap / 2}px)`;
   }
 
   requestAnimationFrame(snap);
