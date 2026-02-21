@@ -1,5 +1,5 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
-
+const TOKEN = "ANGELA_SECRET_123456";
 let appData = null;
 let currentTab = "plan";
 let currentDayIndex = 0;
@@ -552,12 +552,15 @@ function renderTabBar(){
 // =================
 // 更新
 // =================
-async function updateActivity(id,done){
-  await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({type:"updateActivity",activityId:id,done})
-  });
-}
+await fetch(API_URL,{
+  method:"POST",
+  body:JSON.stringify({
+    token: TOKEN,
+    type:"updateActivity",
+    activityId:id,
+    done
+  })
+});
 
 // =================
 // 編輯
