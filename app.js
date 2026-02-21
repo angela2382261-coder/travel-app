@@ -885,27 +885,115 @@ function fieldRow(label, html) {
 
 // 打開 editor
 function openEditor(act) {
-  ensureEditorUI();
-  editingAct = act;
 
-  // 填值
-  document.getElementById("fName").value = act.name || "";
-  document.getElementById("fCost").value = Number(act.cost || 0);
-  document.getElementById("fCategory").value = act.category || "其他";
-  document.getElementById("fNote").value = act.note || "";
-  document.getElementById("fMap").value = act.map || "";
+  // 背景遮罩
+  const overlay = document.createElement("div");
+  overlay.style.position = "fixed";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.width = "100%";
+  overlay.style.height = "100%";
+  overlay.style.background = "rgba(0,0,0,0.25)";
+  overlay.style.zIndex = "999";
 
-  // show
-  const overlay = document.getElementById("editorOverlay");
-  const sheet = document.getElementById("editorSheet");
-  overlay.style.opacity = "1";
-  overlay.style.pointerEvents = "auto";
-  sheet.style.transform = "translateY(0)";
+  // 底部彈出卡片
+  const modal = document.createElement("div");
+  modal.style.position = "fixed";
+  modal.style.bottom = "0";
+  modal.style.left = "0";
+  modal.style.width = "100%";
+  modal.style.background = "#fff";
+  modal.style.borderRadius = "20px 20px 0 0";
+  modal.style.padding = "20px";
+  modal.style.zIndex = "1000";
+  modal.style.boxShadow = "0 -10px 30px rgba(0,0,0,0.15)";
+  modal.style.transform = "translateY(100%)";
+  modal.style.transition = "transform 0.3s ease";
 
-  // iOS 느낌：避免背景滾動
-  document.body.style.overflow = "hidden";
+  // 標題
+  const title = document.createElement("h3");
+  title.innerText = "編輯行程";
+  title.style.marginBottom = "10px";
+
+  // 名稱
+  const nameInput = document.createElement("input");
+  nameInput.value = act.name;
+  nameInput.style.width = "100%";
+  nameInput.style.marginBottom = "10px";
+  nameInput.style.padding = "10px";
+  nameInput.style.borderRadius = "10px";
+  nameInput.style.border = "1px solid #ddd";
+
+  // 金額
+  const costInput = document.createElement("input");
+  costInput.value = act.cost;
+  costInput.type = "number";
+  costInput.style.width = "100%";
+  costInput.style.marginBottom = "10px";
+  costInput.style.padding = "10px";
+  costInput.style.borderRadius = "10px";
+  costInput.style.border = "1px solid #ddd";
+
+  // 備註（交通）
+  const noteInput = document.createElement("input");
+  noteInput.value = act.note || "";
+  noteInput.placeholder = "例如：JR / 地鐵 / 巴士";
+  noteInput.style.width = "100%";
+  noteInput.style.marginBottom = "15px";
+  noteInput.style.padding = "10px";
+  noteInput.style.borderRadius = "10px";
+  noteInput.style.border = "1px solid #ddd";
+
+  // 儲存按鈕
+  const saveBtn = document.createElement("button");
+  saveBtn.innerText = "儲存";
+  saveBtn.style.width = "100%";
+  saveBtn.style.padding = "12px";
+  saveBtn.style.borderRadius = "12px";
+  saveBtn.style.border = "none";
+  saveBtn.style.background = "#007aff";
+  saveBtn.style.color = "#fff";
+  saveBtn.style.fontSize = "16px";
+
+  saveBtn.onclick = async () => {
+    act.name = nameInput.value;
+    act.cost = Number(costInput.value);
+    act.note = noteInput.value;
+
+    closeModal();
+    render();
+
+    await updateActivity(act.id, act.done); // 你原本API
+  };
+
+  // 關閉
+  function closeModal() {
+    modal.style.transform = "translateY(100%)";
+    overlay.style.opacity = "0";
+
+    setTimeout(() => {
+      modal.remove();
+      overlay.remove();
+    }, 300);
+  }
+
+  overlay.onclick = closeModal;
+
+  // 組裝
+  modal.appendChild(title);
+  modal.appendChild(nameInput);
+  modal.appendChild(costInput);
+  modal.appendChild(noteInput);
+  modal.appendChild(saveBtn);
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(modal);
+
+  // 動畫進場
+  setTimeout(() => {
+    modal.style.transform = "translateY(0)";
+  }, 10);
 }
-
 function closeEditor() {
   const overlay = document.getElementById("editorOverlay");
   const sheet = document.getElementById("editorSheet");
