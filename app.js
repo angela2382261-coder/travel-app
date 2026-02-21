@@ -58,15 +58,22 @@ function convert(data) {
           title: d.title,
           activities: activities
             .filter(a => a.dayId === d.dayId)
-            .map(a => ({
-              id: a.activityId,
-              name: a.name,
-              cost: Number(a.cost)||0,
-              done: a.done === true || a.done === "TRUE",
-              category: a.category || "其他",
-              map: a.map || "",
-              note: a.note || ""
-            }))
+           .map(a => ({
+  id: a.activityId,
+  name: a.name,
+  cost: Number(a.cost)||0,
+  done: a.done === true || a.done === "TRUE",
+  category: a.category || "其他",
+  map: a.map || "",
+  note: a.note || "",
+
+  // ⭐ 新增
+  alt: {
+    name: a.alt_name || "",
+    time: a.alt_time || "",
+    map: a.alt_map || ""
+  }
+}))
         }))
     }))
   };
@@ -294,6 +301,20 @@ tag.style.border = "1px solid rgba(255,255,255,0.4)";
 
       info.appendChild(tagWrap);
 
+//查看備選
+      if(act.category === "食物" && act.alt.name){
+  const altBtn = document.createElement("button");
+  altBtn.innerText = "🍽 備選";
+  altBtn.style.marginLeft = "6px";
+
+  altBtn.onclick = (e)=>{
+    e.stopPropagation();
+    openFoodOptions(act);
+  };
+
+  top.appendChild(altBtn);
+}
+      
       // ⭐ 地圖
       const mapBtn=document.createElement("button");
       mapBtn.innerText="📍";
@@ -318,6 +339,96 @@ tag.style.border = "1px solid rgba(255,255,255,0.4)";
 
   container.appendChild(slider);
 
+  //食物專用頁
+  function openFoodOptions(act){
+
+  // ===== overlay =====
+  const overlay = document.createElement("div");
+  overlay.style.cssText = `
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.3);
+    z-index:999;
+  `;
+
+  // ===== sheet =====
+  const sheet = document.createElement("div");
+  sheet.style.cssText = `
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+    background:#fff;
+    border-radius:20px 20px 0 0;
+    padding:16px;
+    transform:translateY(100%);
+    transition:.3s;
+    z-index:1000;
+  `;
+
+  // ===== title =====
+  const title = document.createElement("div");
+  title.innerText = "🍽 備選餐廳";
+  title.style.fontSize="18px";
+  title.style.fontWeight="800";
+  title.style.marginBottom="12px";
+
+  sheet.appendChild(title);
+
+  // ===== 店家卡片 =====
+  const card = document.createElement("div");
+  card.style.padding="12px";
+  card.style.borderRadius="14px";
+  card.style.background="#f9fafb";
+  card.style.marginBottom="10px";
+
+  // 店名
+  const name = document.createElement("div");
+  name.innerText = act.alt.name;
+  name.style.fontWeight="700";
+
+  // 營業時間
+  const time = document.createElement("div");
+  time.innerText = "🕒 " + act.alt.time;
+  time.style.fontSize="13px";
+  time.style.color="#666";
+
+  // 地圖
+  const mapBtn = document.createElement("button");
+  mapBtn.innerText = "📍 開地圖";
+  mapBtn.style.marginTop="8px";
+
+  mapBtn.onclick = ()=>{
+    if(act.alt.map) window.open(act.alt.map);
+  };
+
+  card.appendChild(name);
+  card.appendChild(time);
+  card.appendChild(mapBtn);
+
+  sheet.appendChild(card);
+
+  // ===== 關閉 =====
+  overlay.onclick = close;
+
+  function close(){
+    sheet.style.transform="translateY(100%)";
+    setTimeout(()=>{
+      overlay.remove();
+      sheet.remove();
+    },300);
+  }
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(sheet);
+
+  setTimeout(()=>{
+    sheet.style.transform="translateY(0)";
+  },10);
+}
+
+
+  
   // ===== snap =====
   function snap(){
   const pages = track.children;
