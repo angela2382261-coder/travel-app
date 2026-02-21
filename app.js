@@ -1,4 +1,4 @@
-0=-onst API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
+API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
 
 let appData = null;
 let currentTab = "plan";
@@ -308,18 +308,21 @@ rightBtns.style.display = "flex";
 rightBtns.style.gap = "6px";
 rightBtns.style.marginLeft = "auto";
 
-// 🍽 備選（修正完整版）
-if(
-  act.category?.trim() === "食物" &&
-  act.alt?.name?.trim()
-){
+// 🍽 備選（🔥改這裡）
+if(act.category?.trim() === "食物"){
   const altBtn = document.createElement("button");
   altBtn.innerText = "🍽";
+
   altBtn.style.padding = "6px 10px";
   altBtn.style.borderRadius = "10px";
   altBtn.style.border = "none";
   altBtn.style.background = "rgba(255,255,255,0.6)";
   altBtn.style.backdropFilter = "blur(6px)";
+
+  // ⭐ 沒資料 → 淡掉
+  if(!act.alt?.name){
+    altBtn.style.opacity = "0.4";
+  }
 
   altBtn.onclick = (e)=>{
     e.stopPropagation();
@@ -328,10 +331,10 @@ if(
 
   rightBtns.appendChild(altBtn);
 }
-
 // 📍 地圖（只留這一個）
 const mapBtn = document.createElement("button");
 mapBtn.innerText = "📍";
+
 mapBtn.style.padding = "6px 10px";
 mapBtn.style.borderRadius = "10px";
 mapBtn.style.border = "none";
