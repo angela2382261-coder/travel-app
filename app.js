@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
+·const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
 const TOKEN = "ANGELA_SECRET_123456";
 let appData = null;
 let currentTab = "plan";
@@ -220,18 +220,25 @@ row.style.backdropFilter = "blur(6px)";
       cb.style.marginTop="4px";
 
       cb.onchange = async () => {
-
+  // UI 先動（手感好）
   row.style.transform = "scale(0.96)";
-  row.style.opacity = "0.5";
+  row.style.opacity = "0.6";
+  if (navigator.vibrate) navigator.vibrate(10);
 
-  if (navigator.vibrate) navigator.vibrate(10); // iOS 震動
+  act.done = cb.checked;
 
-  setTimeout(() => {
-    act.done = cb.checked;
+  // 先 render（讓畫面立刻更新）
+  setTimeout(() => render(), 120);
+
+  // 再同步到後端
+  try{
+    await updateActivity(act.id, act.done);
+  }catch(err){
+    // 失敗就回復狀態
+    act.done = !act.done;
     render();
-  }, 180);
-
-  await updateActivity(act.id, cb.checked);
+    alert("同步失敗，請稍後再試");
+  }
 };
 
       const info = document.createElement("div");
@@ -548,18 +555,17 @@ function renderTabBar(){
 
   document.body.appendChild(bar);
 }
+
 // =================
-// 更新
+// 更新（✅ 正確：一定要是 function）
 // =================
 async function updateActivity(id, done){
-  await fetch(API_URL,{
-    method:"POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+  return fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       token: TOKEN,
-      type:"updateActivity",
+      type: "updateActivity",
       activityId: id,
       done: done
     })
