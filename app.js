@@ -16,6 +16,13 @@ async function init() {
 }
 init();
 
+
+setInterval(async () => {
+  const data = await loadFromSheet();
+  appData = convert(data);
+  render();
+}, 15000);
+
 // =================
 // JSONP
 // =================
@@ -110,7 +117,6 @@ function render(){
 // =================
 // ⭐ 行程頁（iOS 卡片版）
 // =================
-
 function renderPlan(container){
   const project = appData.projects[0];
 
@@ -122,7 +128,6 @@ function renderPlan(container){
   track.style.transition="0.4s cubic-bezier(0.22,1,0.36,1)";
   slider.appendChild(track);
 
-  // ⭐ 一定要放這裡（全域給 snap 用）
   const pageWidth = Math.round(window.innerWidth * 0.88);
   const gap = Math.round(window.innerWidth * 0.06);
   const step = pageWidth + gap;
@@ -150,11 +155,24 @@ function renderPlan(container){
 
     day.activities.forEach((act) => {
 
+      // ⭐⭐⭐ 卡片 row ⭐⭐⭐
       const row = document.createElement("div");
+
+      const style = getCategoryStyle(act.category);
+
       row.style.display="flex";
       row.style.flexDirection="column";
-      row.style.padding="14px 0";
-      row.style.borderTop="1px solid #eee";
+      row.style.padding="14px 12px";
+      row.style.marginTop="10px";
+      row.style.borderRadius="14px";
+
+      // ⭐ 分類背景（重點🔥）
+      row.style.background = style.bg;
+
+      // ⭐ 左側色條
+      row.style.borderLeft = `4px solid ${style.color}`;
+
+      row.style.boxShadow="0 4px 14px rgba(0,0,0,0.06)";
 
       // ===== 長按 =====
       let pressTimer;
@@ -179,17 +197,17 @@ function renderPlan(container){
 
       row.addEventListener("touchend",()=>clearTimeout(pressTimer));
 
-      // ===== UI =====
+      // ===== 上排 =====
       const top = document.createElement("div");
       top.style.display="flex";
       top.style.alignItems="flex-start";
       top.style.gap="12px";
 
       const cb = document.createElement("input");
-      cb.style.marginTop = "4px";
       cb.type="checkbox";
       cb.checked=act.done;
       cb.style.transform="scale(1.2)";
+      cb.style.marginTop="4px";
 
       cb.onchange=async()=>{
         act.done=cb.checked;
@@ -203,74 +221,64 @@ function renderPlan(container){
       const name = document.createElement("div");
       name.innerText=act.name;
       name.style.fontWeight="700";
-const price = document.createElement("div");
-price.innerText = `¥${act.cost.toLocaleString()}`;
+      name.style.fontSize="16px";
 
-// ⭐ 金色漸層（質感關鍵）
-price.style.background = "linear-gradient(135deg, #fde68a, #facc15)";
+      // ⭐ 金額（你要的金色 + 藍字）
+      const price = document.createElement("div");
+      price.innerText = `¥${act.cost.toLocaleString()}`;
+      price.style.background = "linear-gradient(135deg,#fde68a,#facc15)";
+      price.style.color = "#1d4ed8";
+      price.style.display = "inline-block";
+      price.style.padding = "6px 12px";
+      price.style.borderRadius = "999px";
+      price.style.fontWeight = "800";
+      price.style.fontSize = "14px";
+      price.style.marginTop = "6px";
 
-// ⭐ 藍色字（iOS感）
-price.style.color = "#1d4ed8";
-
-// ⭐ 膠囊樣式
-price.style.display = "inline-block";
-price.style.padding = "6px 12px";
-price.style.borderRadius = "999px";
-
-// ⭐ 字體
-price.style.fontWeight = "800";
-price.style.fontSize = "14px";
-
-// ⭐ 微陰影（質感↑）
-price.style.boxShadow = "0 2px 6px rgba(0,0,0,0.12)";
-
-// ⭐ 間距
-price.style.marginTop = "6px";
-     
       info.appendChild(name);
       info.appendChild(price);
 
-      // 備註
+      // ⭐ 備註
       if(act.note){
         const note=document.createElement("div");
         note.innerText=act.note;
         note.style.fontSize="13px";
-        note.style.color="#666";
+        note.style.color="#555";
         note.style.marginTop="6px";
         info.appendChild(note);
       }
 
-      // tag
+      // ⭐ TAG
       const tagWrap=document.createElement("div");
       tagWrap.style.marginTop="6px";
+      tagWrap.style.display="flex";
+      tagWrap.style.flexWrap="wrap";
+      tagWrap.style.gap="6px";
 
-      const cat = document.createElement("span");
-cat.innerText = act.category;
+      const cat=document.createElement("span");
+      cat.innerText=act.category;
+      cat.style.background=style.bg;
+      cat.style.color=style.color;
+      cat.style.padding="4px 10px";
+      cat.style.borderRadius="999px";
+      cat.style.fontSize="12px";
+      cat.style.fontWeight="700";
 
-const style = getCategoryStyle(act.category);
-
-cat.style.background = style.bg;
-cat.style.color = style.color;
-
-cat.style.padding = "5px 10px";
-cat.style.borderRadius = "999px";
-cat.style.fontSize = "12px";
-cat.style.fontWeight = "700";
       tagWrap.appendChild(cat);
 
       parseNoteTags(act.note).forEach(t=>{
         const tag=document.createElement("span");
         tag.innerText=t;
-        tag.style.marginLeft="6px";
         tag.style.background="#eef2ff";
         tag.style.padding="4px 8px";
         tag.style.borderRadius="999px";
+        tag.style.fontSize="12px";
         tagWrap.appendChild(tag);
       });
 
       info.appendChild(tagWrap);
 
-      // 地圖
+      // ⭐ 地圖
       const mapBtn=document.createElement("button");
       mapBtn.innerText="📍";
       mapBtn.style.marginLeft="auto";
@@ -294,15 +302,13 @@ cat.style.fontWeight = "700";
 
   container.appendChild(slider);
 
-  // ===== 修正定位 =====
+  // ===== snap =====
   function snap(){
     track.style.transform = `translateX(-${currentDayIndex * step}px)`;
 
     const pages = track.children;
     for(let i=0;i<pages.length;i++){
-      pages[i].style.transform = i===currentDayIndex
-        ? "scale(1)"
-        : "scale(0.94)";
+      pages[i].style.transform = i===currentDayIndex ? "scale(1)" : "scale(0.94)";
       pages[i].style.opacity = i===currentDayIndex ? "1" : "0.5";
     }
   }
@@ -327,6 +333,7 @@ cat.style.fontWeight = "700";
     snap();
   };
 }
+
   
 
 // =================
@@ -643,11 +650,7 @@ function openEditor(act){
     sheet.style.transform="translateY(0)";
   },10);
 
-setInterval(async () => {
-  const data = await loadFromSheet();
-  appData = convert(data);
-  render();
-}, 15000); // 每15秒同步
+
   
   // ===== 關閉 =====
   function close(){
