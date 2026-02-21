@@ -10,7 +10,7 @@ let editingAct = null;
 // 🚀 初始化
 // =================
 async function init() {
-  renderLoading();
+  document.getElementById("app").innerHTML = "⏳ 讀取中...";
   const data = await loadFromSheet();
   appData = convert(data);
   render();
@@ -18,20 +18,13 @@ async function init() {
 init();
 
 // =================
-// ⏳ Loading
-// =================
-function renderLoading() {
-  document.getElementById("app").innerHTML = "⏳ Loading...";
-}
-
-// =================
 // JSONP
 // =================
 function loadFromSheet() {
   return new Promise((resolve) => {
     const cb = "jsonp_" + Date.now();
-    window[cb] = (data) => {
-      resolve(data);
+    window[cb] = (d) => {
+      resolve(d);
       delete window[cb];
     };
     const s = document.createElement("script");
@@ -41,7 +34,7 @@ function loadFromSheet() {
 }
 
 // =================
-// 🔄 轉換
+// 資料轉換
 // =================
 function convert(data) {
   const { projects, days, activities, meta } = data;
@@ -51,7 +44,7 @@ function convert(data) {
       id: p.projectId,
       name: p.name,
       budget: {
-        total: Number(meta.find(m=>m.projectId===p.projectId)?.budgetTotal || 0)
+        total: Number(meta.find(m=>m.projectId===p.projectId)?.budgetTotal||0)
       },
       days: days
         .filter(d => d.projectId === p.projectId)
@@ -62,7 +55,7 @@ function convert(data) {
             .map(a => ({
               id: a.activityId,
               name: a.name,
-              cost: Number(a.cost) || 0,
+              cost: Number(a.cost)||0,
               done: a.done === true || a.done === "TRUE",
               category: a.category || "其他",
               map: a.map || "",
@@ -74,37 +67,34 @@ function convert(data) {
 }
 
 // =================
-// 🏷️ TAG
+// 交通 tag
 // =================
 function parseNoteTags(note){
   if(!note) return [];
-  const s = note;
   const t=[];
-  if(s.includes("JR")) t.push("🚆JR");
-  if(s.includes("地鐵")) t.push("🚇地鐵");
-  if(s.includes("巴士")) t.push("🚌巴士");
-  if(s.includes("步行")) t.push("🚶");
+  if(note.includes("JR")) t.push("🚆 JR");
+  if(note.includes("地鐵")) t.push("🚇 地鐵");
+  if(note.includes("巴士")) t.push("🚌 巴士");
+  if(note.includes("步行")) t.push("🚶 步行");
   return t;
 }
 
 // =================
-// 🎨 UI
+// 主 render
 // =================
 function render(){
-  const el = document.getElementById("app");
-  el.innerHTML="";
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+  app.style.paddingBottom="90px";
 
-  if(currentTab==="plan"){
-    renderPlan(el);
-  }else{
-    renderStats(el);
-  }
+  if(currentTab==="plan") renderPlan(app);
+  else renderStats(app);
 
   renderTabBar();
 }
 
 // =================
-// 🗓 行程（iOS滑動）
+// 行程頁
 // =================
 function renderPlan(container){
   const project = appData.projects[0];
@@ -115,71 +105,81 @@ function renderPlan(container){
   const track = document.createElement("div");
   track.style.display="flex";
   track.style.transition="0.4s";
-
   slider.appendChild(track);
+
+  const width = window.innerWidth;
 
   project.days.forEach(day=>{
     const page = document.createElement("div");
     page.style.minWidth="100%";
+    page.style.padding="12px";
 
     const card = document.createElement("div");
     card.style.background="#fff";
-    card.style.margin="10px";
-    card.style.padding="16px";
     card.style.borderRadius="20px";
+    card.style.padding="16px";
 
     const title = document.createElement("h2");
     title.innerText=day.title;
     card.appendChild(title);
 
     day.activities.forEach(act=>{
-      const row = document.createElement("div");
-      row.style.padding="12px 0";
+      const row=document.createElement("div");
       row.style.borderTop="1px solid #eee";
+      row.style.padding="12px 0";
 
       // 長按
-      let timer;
+      let timer=null;
       row.ontouchstart=()=>{
-        timer=setTimeout(()=>openEditor(act),400);
+        timer=setTimeout(()=>openEditor(act),450);
       };
       row.ontouchend=()=>clearTimeout(timer);
+      row.ontouchmove=()=>clearTimeout(timer);
 
-      const top = document.createElement("div");
+      // top
+      const top=document.createElement("div");
       top.style.display="flex";
 
-      const left = document.createElement("div");
+      const left=document.createElement("div");
       left.style.flex=1;
 
-      const name = document.createElement("div");
+      const name=document.createElement("div");
       name.innerText=act.name;
+      name.style.fontSize="18px";
 
-      const price = document.createElement("span");
-      price.innerText=`¥${act.cost}`;
-      price.style.background="#eef";
+      const price=document.createElement("div");
+      price.innerText="¥"+act.cost;
+      price.style.background="#e0f2fe";
+      price.style.display="inline-block";
       price.style.padding="4px 10px";
-      price.style.borderRadius="10px";
+      price.style.borderRadius="999px";
 
-      const tagWrap=document.createElement("div");
+      const tags=document.createElement("div");
 
       const cat=document.createElement("span");
       cat.innerText=act.category;
-      cat.style.fontSize="12px";
-      tagWrap.appendChild(cat);
+      cat.style.background="#eee";
+      cat.style.padding="3px 8px";
+      cat.style.borderRadius="999px";
+      tags.appendChild(cat);
 
       parseNoteTags(act.note).forEach(t=>{
         const tag=document.createElement("span");
         tag.innerText=t;
-        tag.style.fontSize="12px";
-        tagWrap.appendChild(tag);
+        tag.style.marginLeft="5px";
+        tags.appendChild(tag);
       });
 
       left.appendChild(name);
       left.appendChild(price);
-      left.appendChild(tagWrap);
+      left.appendChild(tags);
 
       const mapBtn=document.createElement("button");
       mapBtn.innerText="📍";
-      mapBtn.onclick=()=>window.open(act.map);
+      mapBtn.onclick=e=>{
+        e.stopPropagation();
+        window.open(act.map);
+      };
 
       top.appendChild(left);
       top.appendChild(mapBtn);
@@ -195,32 +195,41 @@ function renderPlan(container){
   container.appendChild(slider);
 
   // 滑動
-  let startX=0;
-
-  slider.ontouchstart=e=>{
-    startX=e.touches[0].clientX;
-  };
+  let start=0;
+  slider.ontouchstart=e=>start=e.touches[0].clientX;
 
   slider.ontouchend=e=>{
-    const diff=e.changedTouches[0].clientX-startX;
-    if(diff<-50) currentDayIndex++;
-    if(diff>50) currentDayIndex--;
-
+    let diff=start-e.changedTouches[0].clientX;
+    if(diff>50) currentDayIndex++;
+    if(diff<-50) currentDayIndex--;
     currentDayIndex=Math.max(0,Math.min(currentDayIndex,project.days.length-1));
-    track.style.transform=`translateX(-${currentDayIndex*100}%)`;
+    track.style.transform=`translateX(-${currentDayIndex*width}px)`;
   };
+
+  // dots
+  const dots=document.createElement("div");
+  dots.style.textAlign="center";
+  project.days.forEach((_,i)=>{
+    const d=document.createElement("span");
+    d.innerText="●";
+    d.style.margin="3px";
+    d.style.opacity=i===currentDayIndex?1:0.3;
+    dots.appendChild(d);
+  });
+
+  container.appendChild(dots);
 }
 
 // =================
-// 📊 統計
+// 統計頁
 // =================
 function renderStats(container){
-  const project = appData.projects[0];
+  const p=appData.projects[0];
 
   let total=0;
-  let stats={};
+  const stats={};
 
-  project.days.forEach(d=>{
+  p.days.forEach(d=>{
     d.activities.forEach(a=>{
       if(a.done){
         total+=a.cost;
@@ -235,111 +244,51 @@ function renderStats(container){
   card.style.padding="16px";
   card.style.borderRadius="20px";
 
-  const title=document.createElement("h2");
-  title.innerText="📊 統計";
-  card.appendChild(title);
+  card.innerHTML=`💰 ¥${total} / ¥${p.budget.total}`;
 
-  const text=document.createElement("div");
-  text.innerText=`¥${total}`;
-  card.appendChild(text);
+  Object.entries(stats).forEach(([k,v])=>{
+    const div=document.createElement("div");
+    div.innerText=`${k} ¥${v}`;
+    card.appendChild(div);
+  });
 
   container.appendChild(card);
 }
 
 // =================
-// tab
+// TabBar（關鍵🔥）
 // =================
-function renderTabBar() {
-  // 移除舊的
-  const old = document.getElementById("tabbar");
-  if (old) old.remove();
+function renderTabBar(){
+  const old=document.querySelector(".tabbar");
+  if(old) old.remove();
 
-  const tabbar = document.createElement("div");
-  tabbar.id = "tabbar";
+  const bar=document.createElement("div");
+  bar.className="tabbar";
+  bar.style.position="fixed";
+  bar.style.bottom="0";
+  bar.style.width="100%";
+  bar.style.display="flex";
+  bar.style.background="#fff";
+  bar.style.borderTop="1px solid #eee";
 
-  // ⭐ iOS safe-area + 不被 Safari 擋住
-  tabbar.style.cssText = `
-    position: fixed;
-    left: 0; right: 0;
-    bottom: 0;
-    height: 72px;
-    padding-bottom: env(safe-area-inset-bottom);
-    background: rgba(255,255,255,0.96);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid rgba(0,0,0,0.06);
-    display: flex;
-    z-index: 999999;
-  `;
-
-  const mkTab = (key, icon, label) => {
-    const t = document.createElement("button");
-    t.type = "button";
-    t.style.cssText = `
-      flex: 1;
-      border: none;
-      background: transparent;
-      padding: 10px 0 8px;
-      font-size: 12px;
-      color: ${currentTab === key ? "#007aff" : "#8e8e93"};
-      font-weight: ${currentTab === key ? "700" : "500"};
-    `;
-    t.innerHTML = `<div style="font-size:20px; line-height:20px;">${icon}</div><div>${label}</div>`;
-    t.onclick = () => {
-      currentTab = key;
-      render();
-    };
+  const mk=(key,label)=>{
+    const t=document.createElement("div");
+    t.style.flex=1;
+    t.style.textAlign="center";
+    t.innerText=label;
+    t.onclick=()=>{currentTab=key;render();};
     return t;
   };
 
-  tabbar.appendChild(mkTab("plan", "🗓", "行程"));
-  tabbar.appendChild(mkTab("stats", "📊", "統計"));
+  bar.appendChild(mk("plan","行程"));
+  bar.appendChild(mk("stats","統計"));
 
-  document.body.appendChild(tabbar);
+  document.body.appendChild(bar);
 }
 
 // =================
-// ✏️ Editor（修好版）
+// 編輯視窗
 // =================
 function openEditor(act){
-  editingAct=act;
-
-  const overlay=document.createElement("div");
-  overlay.style.position="fixed";
-  overlay.style.inset="0";
-  overlay.style.background="rgba(0,0,0,0.3)";
-
-  const modal=document.createElement("div");
-  modal.style.position="fixed";
-  modal.style.bottom="0";
-  modal.style.background="#fff";
-  modal.style.width="100%";
-  modal.style.padding="20px";
-  modal.style.borderRadius="20px 20px 0 0";
-
-  const input=document.createElement("input");
-  input.value=act.name;
-
-  const save=document.createElement("button");
-  save.innerText="儲存";
-
-  save.onclick=()=>{
-    act.name=input.value;
-    overlay.remove();
-    modal.remove();
-    render();
-  };
-
-  modal.appendChild(input);
-  modal.appendChild(save);
-
-  overlay.onclick=()=>{
-    overlay.remove();
-    modal.remove();
-  };
-
-  document.body.appendChild(overlay);
-  document.body.appendChild(modal);
+  alert("之後這裡會升級成完整編輯UI");
 }
-
-  
