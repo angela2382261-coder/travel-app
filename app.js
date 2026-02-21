@@ -111,10 +111,13 @@ function renderPlan(container){
     const page = document.createElement("div");
 
     // ⭐ iOS 卡片寬度
-    page.style.minWidth="85%";
-    page.style.margin="0 7.5%";
-    page.style.boxSizing="border-box";
-    page.style.transition="transform 0.3s, opacity 0.3s";
+    const pageWidth = Math.round(window.innerWidth * 0.88);
+const gap = Math.round(window.innerWidth * 0.06);
+
+page.style.width = pageWidth + "px";
+page.style.marginLeft = gap/2 + "px";
+page.style.marginRight = gap/2 + "px";
+page.style.flexShrink = "0";
 
     const card = document.createElement("div");
     card.style.background="#fff";
@@ -252,26 +255,25 @@ function renderPlan(container){
 
   // ⭐ 定位 + 縮放
   function snap(){
-    const w = slider.clientWidth;
-    const offset = w * 0.075;
+    const step = pageWidth + gap;
 
-    track.style.transform =
-      `translateX(-${currentDayIndex * w}px + ${offset}px)`;
+track.style.transform = `translateX(-${currentDayIndex * step}px)`;
+    requestAnimationFrame(() => {
+  track.style.transform = `translateX(-${currentDayIndex * step}px)`;
+});
 
     updateScale();
   }
 
   function updateScale(){
-    const pages = track.children;
-    for(let i=0;i<pages.length;i++){
-      if(i===currentDayIndex){
-        pages[i].style.transform="scale(1)";
-        pages[i].style.opacity="1";
-      }else{
-        pages[i].style.transform="scale(0.92)";
-        pages[i].style.opacity="0.5";
-      }
-    }
+  const pages = track.children;
+  for(let i=0;i<pages.length;i++){
+    pages[i].style.transform = i===currentDayIndex
+      ? "scale(1)"
+      : "scale(0.94)";
+    pages[i].style.opacity = i===currentDayIndex ? "1" : "0.5";
+  }
+}
   }
 
   requestAnimationFrame(snap);
