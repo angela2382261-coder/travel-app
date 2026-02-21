@@ -41,7 +41,7 @@ async function init() {
 init();
 
 // =================
-// 🔄 資料轉換（🔥升級）
+// 🔄 資料轉換
 // =================
 function convertSheetToAppData(data) {
   const { projects, days, activities, meta } = data;
@@ -60,7 +60,6 @@ function convertSheetToAppData(data) {
       .filter(d => d.projectId === p.projectId)
       .map(d => ({
         title: d.title,
-        date: d.date,
         activities: activities
           .filter(a => a.dayId === d.dayId)
           .map(a => ({
@@ -69,7 +68,7 @@ function convertSheetToAppData(data) {
             cost: Number(a.cost) || 0,
             done: a.done === true || a.done === "TRUE",
             category: a.category || "其他",
-            map: a.map || ""   // ⭐ 修正：地圖
+            map: a.map || ""
           }))
       }));
 
@@ -91,13 +90,12 @@ function render() {
   const container = document.getElementById("app");
   container.innerHTML = "";
   container.style.padding = "15px";
-  container.style.fontFamily = "-apple-system";
   container.style.background = "#f5f5f5";
 
   const project = appData.projects[0];
 
   // =================
-  // 💰 花費
+  // 📊 花費統計
   // =================
   let total = 0;
   let stats = {};
@@ -106,28 +104,73 @@ function render() {
     day.activities.forEach(a => {
       if (a.done) {
         total += a.cost;
+
         if (!stats[a.category]) stats[a.category] = 0;
         stats[a.category] += a.cost;
       }
     });
   });
 
-  const budget = document.createElement("div");
-  budget.style.background = "#fff";
-  budget.style.padding = "12px";
-  budget.style.borderRadius = "12px";
-  budget.style.marginBottom = "15px";
-  budget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.05)";
+  // =================
+  // 📊 圓餅圖卡片
+  // =================
+  const chartCard = document.createElement("div");
+  chartCard.style.background = "#fff";
+  chartCard.style.borderRadius = "16px";
+  chartCard.style.padding = "15px";
+  chartCard.style.marginBottom = "15px";
+  chartCard.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
 
-  budget.innerHTML = `💰 總花費：¥${total} / ¥${project.budget.total}<br>`;
+  const canvas = document.createElement("canvas");
+  canvas.width = 200;
+  canvas.height = 200;
+
+  const ctx = canvas.getContext("2d");
+
+  let start = 0;
+  const colors = ["#60a5fa", "#f87171", "#34d399", "#fbbf24", "#c084fc"];
+
+  let i = 0;
   for (let k in stats) {
-    budget.innerHTML += `📊 ${k}：¥${stats[k]}<br>`;
+    const value = stats[k];
+    const angle = (value / total) * Math.PI * 2;
+
+    ctx.beginPath();
+    ctx.moveTo(100, 100);
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.arc(100, 100, 80, start, start + angle);
+    ctx.fill();
+
+    start += angle;
+    i++;
   }
 
-  container.appendChild(budget);
+  chartCard.appendChild(canvas);
 
   // =================
-  // 🗓 行程
+  // 📊 分類文字（重點升級✨）
+  // =================
+  i = 0;
+  for (let k in stats) {
+    const item = document.createElement("div");
+    item.innerHTML = `⬤ ${k}：¥${stats[k]}`;
+    item.style.color = colors[i % colors.length];
+    chartCard.appendChild(item);
+    i++;
+  }
+
+  // =================
+  // 💰 總金額
+  // =================
+  const totalText = document.createElement("div");
+  totalText.style.marginTop = "10px";
+  totalText.innerHTML = `💰 總花費：¥${total} / ¥${project.budget.total}`;
+  chartCard.appendChild(totalText);
+
+  container.appendChild(chartCard);
+
+  // =================
+  // 🗓 行程卡片
   // =================
   project.days.forEach(day => {
     const card = document.createElement("div");
@@ -146,12 +189,6 @@ function render() {
 
     day.activities.forEach(act => {
       const row = document.createElement("div");
-      row.style.display = "flex";
-      row.style.justifyContent = "space-between";
-      row.style.alignItems = "center";
-      row.style.marginBottom = "10px";
-
-      const left = document.createElement("div");
 
       const cb = document.createElement("input");
       cb.type = "checkbox";
@@ -163,23 +200,6 @@ function render() {
         await updateActivity(act.id, cb.checked);
       };
 
-      // 🎨 分類標籤
-      const tag = document.createElement("span");
-      const colors = {
-        "食物": "#ffe4e6",
-        "景點": "#e0f2fe",
-        "交通": "#fef9c3",
-        "飯店": "#dcfce7",
-        "其他": "#eee"
-      };
-
-      tag.innerText = act.category;
-      tag.style.background = colors[act.category] || "#eee";
-      tag.style.padding = "2px 8px";
-      tag.style.borderRadius = "8px";
-      tag.style.marginRight = "6px";
-      tag.style.fontSize = "12px";
-
       const text = document.createElement("span");
       text.innerText = ` ${act.name} ¥${act.cost}`;
 
@@ -188,25 +208,8 @@ function render() {
         text.style.color = "#999";
       }
 
-      left.appendChild(cb);
-      left.appendChild(tag);
-      left.appendChild(text);
-
-      // 📍 地圖
-      const mapBtn = document.createElement("button");
-      mapBtn.innerText = "📍";
-      mapBtn.style.border = "none";
-      mapBtn.style.background = "#eee";
-      mapBtn.style.borderRadius = "8px";
-      mapBtn.style.padding = "6px";
-
-      mapBtn.onclick = () => {
-        if (act.map) window.open(act.map, "_blank");
-      };
-
-      row.appendChild(left);
-      row.appendChild(mapBtn);
-
+      row.appendChild(cb);
+      row.appendChild(text);
       card.appendChild(row);
     });
 
