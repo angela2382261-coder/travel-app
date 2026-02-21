@@ -1,25 +1,23 @@
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
 
 let appData = null;
 let currentTab = "plan";
 let currentDayIndex = 0;
 
-let dragItem = null;
-let dragging = false;
-let dragStartY = 0;
-
-// ===== init =====
-init();
-
+// =================
+// 🚀 初始化
+// =================
 async function init() {
   document.getElementById("app").innerHTML = "⏳ 讀取中...";
   const data = await loadFromSheet();
   appData = convert(data);
   render();
 }
+init();
 
-// ===== JSONP =====
+// =================
+// JSONP
+// =================
 function loadFromSheet() {
   return new Promise((resolve) => {
     const cb = "jsonp_" + Date.now();
@@ -33,296 +31,346 @@ function loadFromSheet() {
   });
 }
 
-// ===== convert =====
+// =================
+// 資料轉換
+// =================
 function convert(data) {
   const { projects, days, activities, meta } = data;
 
   return {
-    projects: projects.map((p) => ({
+    projects: projects.map(p => ({
       id: p.projectId,
       name: p.name,
       budget: {
-        total: Number(meta.find((m) => m.projectId === p.projectId)?.budgetTotal || 0),
+        total: Number(meta.find(m=>m.projectId===p.projectId)?.budgetTotal||0)
       },
       days: days
-        .filter((d) => d.projectId === p.projectId)
-        .map((d) => ({
+        .filter(d => d.projectId === p.projectId)
+        .map(d => ({
           title: d.title,
           activities: activities
-            .filter((a) => a.dayId === d.dayId)
-            .map((a) => ({
+            .filter(a => a.dayId === d.dayId)
+            .map(a => ({
               id: a.activityId,
               name: a.name,
-              cost: Number(a.cost) || 0,
+              cost: Number(a.cost)||0,
               done: a.done === true || a.done === "TRUE",
               category: a.category || "其他",
               map: a.map || "",
-              note: a.note || "",
-            })),
-        })),
-    })),
+              note: a.note || ""
+            }))
+        }))
+    }))
   };
 }
 
-// ===== render =====
-function render() {
+// =================
+// 交通 tag
+// =================
+function parseNoteTags(note){
+  if(!note) return [];
+  const t=[];
+  if(note.includes("JR")) t.push("🚆 JR");
+  if(note.includes("地鐵")) t.push("🚇 地鐵");
+  if(note.includes("巴士")) t.push("🚌 巴士");
+  if(note.includes("步行")) t.push("🚶 步行");
+  return t;
+}
+
+// =================
+// 主 render
+// =================
+function render(){
   const app = document.getElementById("app");
   app.innerHTML = "";
-  app.style.background = "#f2f2f7";
-  app.style.minHeight = "100vh";
-  app.style.paddingBottom = "90px";
+  app.style.paddingBottom="90px";
 
-  if (currentTab === "plan") renderPlan(app);
+  if(currentTab==="plan") renderPlan(app);
   else renderStats(app);
 
   renderTabBar();
 }
 
-// ===== 行程 =====
-function renderPlan(container) {
+// =================
+// ⭐ 行程頁（iOS 卡片版）
+// =================
+function renderPlan(container){
   const project = appData.projects[0];
 
   const slider = document.createElement("div");
-  slider.style.overflow = "hidden";
+  slider.style.overflow="hidden";
 
   const track = document.createElement("div");
-  track.style.display = "flex";
-  track.style.transition = "0.35s ease";
+  track.style.display="flex";
+  track.style.transition="0.4s cubic-bezier(0.22,1,0.36,1)";
   slider.appendChild(track);
 
-  // ⭐ iOS 卡片尺寸
-  const pageWidth = Math.round(window.innerWidth * 0.88);
-  const gap = Math.round(window.innerWidth * 0.06);
-  const step = pageWidth + gap;
+  let width = 0;
 
-  project.days.forEach((day) => {
+  project.days.forEach(day=>{
     const page = document.createElement("div");
-    page.style.width = pageWidth + "px";
-    page.style.marginLeft = gap / 2 + "px";
-    page.style.marginRight = gap / 2 + "px";
-    page.style.flexShrink = "0";
+
+    // ⭐ iOS 卡片寬度
+    page.style.minWidth="85%";
+    page.style.margin="0 7.5%";
+    page.style.boxSizing="border-box";
+    page.style.transition="transform 0.3s, opacity 0.3s";
 
     const card = document.createElement("div");
-    card.style.background = "#fff";
-    card.style.borderRadius = "24px";
-    card.style.padding = "16px";
+    card.style.background="#fff";
+    card.style.borderRadius="26px";
+    card.style.padding="18px";
+    card.style.boxShadow="0 10px 30px rgba(0,0,0,0.12)";
 
     const title = document.createElement("h2");
-    title.innerText = day.title;
+    title.innerText=day.title;
+    title.style.fontSize="26px";
+    title.style.marginBottom="10px";
+
     card.appendChild(title);
 
     day.activities.forEach((act) => {
+
       const row = document.createElement("div");
-      row.dataset.id = act.id;
+      row.style.display="flex";
+      row.style.flexDirection="column";
+      row.style.padding="14px 0";
+      row.style.borderTop="1px solid #eee";
 
-      row.style.padding = "14px 0";
-      row.style.borderTop = "1px solid #eee";
-
-      // ===== 長按拖曳 =====
+      // ⭐ 長按
       let pressTimer;
-      let startY = 0;
+      let startX=0,startY=0;
 
-      row.addEventListener("touchstart", (e) => {
-        const t = e.touches[0];
-        startY = t.clientY;
+      row.addEventListener("touchstart",(e)=>{
+        const t=e.touches[0];
+        startX=t.clientX;
+        startY=t.clientY;
 
-        pressTimer = setTimeout(() => {
-          dragging = true;
-          dragItem = row;
-          dragStartY = t.clientY;
-
-          row.style.opacity = "0.5";
-          row.style.transform = "scale(1.05)";
-        }, 400);
+        pressTimer=setTimeout(()=>{
+          openEditor(act);
+        },450);
       });
 
-      row.addEventListener("touchmove", (e) => {
-        const t = e.touches[0];
-
-        if (!dragging && Math.abs(t.clientY - startY) > 10) {
+      row.addEventListener("touchmove",(e)=>{
+        const t=e.touches[0];
+        if(Math.abs(t.clientX-startX)>10 || Math.abs(t.clientY-startY)>10){
           clearTimeout(pressTimer);
         }
-
-        if (dragging && dragItem) {
-          e.preventDefault();
-
-          const moveY = t.clientY - dragStartY;
-          dragItem.style.transform = `translateY(${moveY}px) scale(1.05)`;
-
-          handleReorder(card);
-        }
-      }, { passive: false });
-
-      row.addEventListener("touchend", () => {
-        clearTimeout(pressTimer);
-
-        if (dragging) finishDrag(day, card);
-
-        dragging = false;
-        dragItem = null;
       });
 
-      // ===== UI =====
+      row.addEventListener("touchend",()=>clearTimeout(pressTimer));
+
+      // 上排
       const top = document.createElement("div");
-      top.style.display = "flex";
-      top.style.gap = "12px";
+      top.style.display="flex";
+      top.style.alignItems="flex-start";
+      top.style.gap="12px";
 
       const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = act.done;
+      cb.type="checkbox";
+      cb.checked=act.done;
+      cb.style.transform="scale(1.3)";
+
+      cb.onchange=async()=>{
+        act.done=cb.checked;
+        render();
+        await updateActivity(act.id, cb.checked);
+      };
 
       const info = document.createElement("div");
-info.style.flex = "1";
-info.style.minWidth = "0";
+      info.style.flex="1";
 
-// 名稱
-const name = document.createElement("div");
-name.innerText = act.name;
-name.style.fontSize = "18px";
-name.style.fontWeight = "700";
+      const name = document.createElement("div");
+      name.innerText=act.name;
+      name.style.fontWeight="700";
+      name.style.fontSize="18px";
 
-// 金額
-const price = document.createElement("div");
-price.innerText = `¥${act.cost}`;
-price.style.display = "inline-block";
-price.style.marginTop = "6px";
-price.style.padding = "6px 12px";
-price.style.borderRadius = "999px";
-price.style.background = "#e0f2fe";
-price.style.fontWeight = "700";
+      const price = document.createElement("div");
+      price.innerText=`¥${act.cost}`;
+      price.style.background="#e0f2fe";
+      price.style.display="inline-block";
+      price.style.padding="6px 12px";
+      price.style.borderRadius="999px";
+      price.style.marginTop="6px";
 
-// 備註
-if (act.note) {
-  const note = document.createElement("div");
-  note.innerText = act.note;
-  note.style.marginTop = "6px";
-  note.style.fontSize = "13px";
-  note.style.color = "#6b7280";
-  info.appendChild(note);
-}
+      info.appendChild(name);
+      info.appendChild(price);
 
-// ⭐ tag container（只出現一次！）
-const tagWrap = document.createElement("div");
-tagWrap.style.display = "flex";
-tagWrap.style.flexWrap = "wrap";
-tagWrap.style.gap = "6px";
-tagWrap.style.marginTop = "6px";
+      if(act.note){
+        const note=document.createElement("div");
+        note.innerText=act.note;
+        note.style.fontSize="13px";
+        note.style.color="#666";
+        note.style.marginTop="6px";
+        info.appendChild(note);
+      }
 
-// 分類 tag
-const cat = document.createElement("span");
-cat.innerText = act.category;
-cat.style.fontSize = "12px";
-cat.style.padding = "4px 10px";
-cat.style.borderRadius = "999px";
-cat.style.background = "#eee";
-tagWrap.appendChild(cat);
+      const tagWrap=document.createElement("div");
+      tagWrap.style.marginTop="6px";
 
-// 交通 tag
-parseNoteTags(act.note).forEach(t => {
-  const tag = document.createElement("span");
-  tag.innerText = t;
-  tag.style.fontSize = "12px";
-  tag.style.padding = "4px 8px";
-  tag.style.borderRadius = "999px";
-  tag.style.background = "#eef2ff";
-  tagWrap.appendChild(tag);
-});
+      const cat=document.createElement("span");
+      cat.innerText=act.category;
+      cat.style.background="#eee";
+      cat.style.padding="4px 8px";
+      cat.style.borderRadius="999px";
+      tagWrap.appendChild(cat);
 
-// ⭐ 正確順序（很重要）
-info.appendChild(name);
-info.appendChild(price);
-info.appendChild(tagWrap);
+      parseNoteTags(act.note).forEach(t=>{
+        const tag=document.createElement("span");
+        tag.innerText=t;
+        tag.style.marginLeft="6px";
+        tag.style.background="#eef2ff";
+        tag.style.padding="4px 8px";
+        tag.style.borderRadius="999px";
+        tagWrap.appendChild(tag);
+      });
 
-      
+      info.appendChild(tagWrap);
+
+      const mapBtn=document.createElement("button");
+      mapBtn.innerText="📍";
+      mapBtn.style.marginLeft="auto";
+
+      mapBtn.onclick=(e)=>{
+        e.stopPropagation();
+        if(act.map) window.open(act.map);
+      };
+
+      top.appendChild(cb);
+      top.appendChild(info);
+      top.appendChild(mapBtn);
+
+      row.appendChild(top);
+      card.appendChild(row);
+    });
+
+    page.appendChild(card);
+    track.appendChild(page);
   });
 
   container.appendChild(slider);
 
-  // ===== ⭐ 核心修正（不會跑掉） =====
-  function snap() {
-    track.style.transform = `translateX(-${currentDayIndex * step}px)`;
+  // ⭐ 定位 + 縮放
+  function snap(){
+    const w = slider.clientWidth;
+    const offset = w * 0.075;
+
+    track.style.transform =
+      `translateX(-${currentDayIndex * w}px + ${offset}px)`;
+
+    updateScale();
+  }
+
+  function updateScale(){
+    const pages = track.children;
+    for(let i=0;i<pages.length;i++){
+      if(i===currentDayIndex){
+        pages[i].style.transform="scale(1)";
+        pages[i].style.opacity="1";
+      }else{
+        pages[i].style.transform="scale(0.92)";
+        pages[i].style.opacity="0.5";
+      }
+    }
   }
 
   requestAnimationFrame(snap);
 
-  // ===== 滑動 =====
-  let startX = 0;
+  // ⭐ 滑動
+  let start=0;
+  slider.ontouchstart=e=>start=e.touches[0].clientX;
 
-  slider.ontouchstart = (e) => {
-    startX = e.touches[0].clientX;
-  };
+  slider.ontouchend=e=>{
+    const diff=start-e.changedTouches[0].clientX;
 
-  slider.ontouchend = (e) => {
-    const diff = startX - e.changedTouches[0].clientX;
+    if(diff>50) currentDayIndex++;
+    if(diff<-50) currentDayIndex--;
 
-    if (diff > 50) currentDayIndex++;
-    if (diff < -50) currentDayIndex--;
-
-    currentDayIndex = Math.max(0, Math.min(currentDayIndex, project.days.length - 1));
+    currentDayIndex=Math.max(0,Math.min(currentDayIndex,project.days.length-1));
 
     snap();
   };
 }
 
-// ===== 拖曳排序 =====
-function handleReorder(card) {
-  const rows = Array.from(card.querySelectorAll("[data-id]"))
-    .filter((el) => el !== dragItem);
+// =================
+// 統計
+// =================
+function renderStats(container){
+  const p=appData.projects[0];
 
-  for (let target of rows) {
-    const rect = target.getBoundingClientRect();
-    const mid = rect.top + rect.height / 2;
+  let total=0;
+  const stats={};
 
-    if (dragItem.getBoundingClientRect().top < mid) {
-      card.insertBefore(dragItem, target);
-      return;
-    }
-  }
-
-  card.appendChild(dragItem);
-}
-
-function finishDrag(day, card) {
-  const rows = Array.from(card.querySelectorAll("[data-id]"));
-
-  day.activities = rows.map((r) =>
-    day.activities.find((a) => a.id == r.dataset.id)
-  );
-
-  dragItem.style.transform = "";
-  dragItem.style.opacity = "1";
-
-  render();
-}
-
-// ===== tab =====
-function renderTabBar() {
-  const old = document.querySelector(".tabbar");
-  if (old) old.remove();
-
-  const bar = document.createElement("div");
-  bar.style.position = "fixed";
-  bar.style.bottom = "0";
-  bar.style.width = "100%";
-  bar.style.display = "flex";
-  bar.style.background = "#fff";
-
-  ["plan", "stats"].forEach((k) => {
-    const t = document.createElement("div");
-    t.innerText = k === "plan" ? "行程" : "統計";
-    t.style.flex = 1;
-    t.style.textAlign = "center";
-    t.onclick = () => {
-      currentTab = k;
-      render();
-    };
-    bar.appendChild(t);
+  p.days.forEach(d=>{
+    d.activities.forEach(a=>{
+      if(a.done){
+        total+=a.cost;
+        stats[a.category]=(stats[a.category]||0)+a.cost;
+      }
+    });
   });
+
+  const card=document.createElement("div");
+  card.style.background="#fff";
+  card.style.margin="16px";
+  card.style.padding="16px";
+  card.style.borderRadius="20px";
+
+  card.innerHTML=`💰 ¥${total} / ¥${p.budget.total}`;
+
+  Object.entries(stats).forEach(([k,v])=>{
+    const div=document.createElement("div");
+    div.innerText=`${k} ¥${v}`;
+    card.appendChild(div);
+  });
+
+  container.appendChild(card);
+}
+
+// =================
+// tabbar
+// =================
+function renderTabBar(){
+  const old=document.querySelector(".tabbar");
+  if(old) old.remove();
+
+  const bar=document.createElement("div");
+  bar.className="tabbar";
+  bar.style.position="fixed";
+  bar.style.bottom="0";
+  bar.style.width="100%";
+  bar.style.display="flex";
+  bar.style.background="#fff";
+  bar.style.borderTop="1px solid #eee";
+
+  const mk=(k,t)=>{
+    const d=document.createElement("div");
+    d.style.flex=1;
+    d.style.textAlign="center";
+    d.innerText=t;
+    d.onclick=()=>{currentTab=k;render();};
+    return d;
+  };
+
+  bar.appendChild(mk("plan","行程"));
+  bar.appendChild(mk("stats","統計"));
 
   document.body.appendChild(bar);
 }
 
-// ===== stats =====
-function renderStats(container) {
-  container.innerHTML = "📊 統計功能";
+// =================
+// 更新
+// =================
+async function updateActivity(id,done){
+  await fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({type:"updateActivity",activityId:id,done})
+  });
+}
+
+// =================
+// 編輯
+// =================
+function openEditor(act){
+  alert("長按成功，可擴充編輯 UI");
 }
