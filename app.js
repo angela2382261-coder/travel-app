@@ -347,19 +347,59 @@ function renderPlan(container) {
   // =================
   // 長按開編輯（只留一份）
   // =================
-  let pressTimer = null;
+  // =================
+// 長按 + 點擊（最穩版本🔥）
+// =================
+let pressTimer = null;
+let startX = 0;
+let startY = 0;
+let isLongPress = false;
 
-  row.addEventListener("touchstart", () => {
-    pressTimer = setTimeout(() => openEditor(act), 450);
-  }, { passive: true });
+row.addEventListener("touchstart", (e) => {
+  e.stopPropagation();
 
-  row.addEventListener("touchend", () => {
+  const touch = e.touches[0];
+  startX = touch.clientX;
+  startY = touch.clientY;
+  isLongPress = false;
+
+  pressTimer = setTimeout(() => {
+    isLongPress = true;
+    openEditor(act);   // ⭐開編輯
+  }, 450);
+
+}, { passive: true });
+
+row.addEventListener("touchmove", (e) => {
+  e.stopPropagation();
+
+  const touch = e.touches[0];
+  const dx = Math.abs(touch.clientX - startX);
+  const dy = Math.abs(touch.clientY - startY);
+
+  // ⭐如果滑動 >10px → 取消長按（避免誤觸）
+  if (dx > 10 || dy > 10) {
     clearTimeout(pressTimer);
-  }, { passive: true });
+  }
 
-  row.addEventListener("touchmove", () => {
-    clearTimeout(pressTimer);
-  }, { passive: true });
+}, { passive: true });
+
+row.addEventListener("touchend", (e) => {
+  e.stopPropagation();
+
+  clearTimeout(pressTimer);
+
+  // ⭐如果不是長按 → 當作「點擊」
+  if (!isLongPress) {
+    expanded[key] = !expanded[key];
+    render();
+  }
+
+}, { passive: true });
+
+row.addEventListener("touchcancel", () => {
+  clearTimeout(pressTimer);
+});
 
   // 組起來
   row.appendChild(top);
