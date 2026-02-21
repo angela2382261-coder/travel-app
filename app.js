@@ -7,11 +7,11 @@ function renderLoading() {
   document.getElementById("app").innerHTML = "⏳ 讀取資料中...";
 }
 
-// ✅ JSONP 讀資料（解決 CORS）
+// ✅ JSONP
 function loadFromSheet() {
   return new Promise((resolve) => {
     const script = document.createElement("script");
-    const callbackName = "jsonpCallback_" + Date.now();
+    const callbackName = "jsonp_" + Date.now();
 
     window[callbackName] = function (data) {
       resolve(data);
@@ -48,8 +48,7 @@ function convertSheetToAppData(data) {
       id: p.projectId,
       name: p.name,
       days: [],
-      budget: { total: 0 },
-      luggage: {}
+      budget: { total: 0 }
     };
 
     project.days = days
@@ -78,14 +77,22 @@ function convertSheetToAppData(data) {
   return result;
 }
 
-// ✅ 畫面渲染
+// ✅ UI 渲染（重點升級版）
 function render() {
   const container = document.getElementById("app");
+
+  // ⭐ App 背景
+  document.body.style.background = "#f5f6f8";
+  document.body.style.fontFamily = "-apple-system, BlinkMacSystemFont, sans-serif";
+
   container.innerHTML = "";
+  container.style.maxWidth = "500px";
+  container.style.margin = "0 auto";
+  container.style.padding = "15px";
 
   const project = appData.projects[0];
 
-  // ✅ 計算總花費
+  // ✅ 計算花費
   let total = 0;
   project.days.forEach(day => {
     day.activities.forEach(a => {
@@ -93,60 +100,71 @@ function render() {
     });
   });
 
-  // ✅ 預算
+  // ✅ 預算卡片（升級）
   const budget = document.createElement("div");
-  budget.style.marginBottom = "10px";
+  budget.style.background = "#ffffff";
+  budget.style.borderRadius = "16px";
+  budget.style.padding = "15px";
+  budget.style.marginBottom = "15px";
+  budget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
   budget.innerHTML = `💰 已花：¥${total} / ¥${project.budget.total}`;
   container.appendChild(budget);
 
   // ✅ 標題
   const title = document.createElement("h2");
   title.innerText = project.name;
+  title.style.marginBottom = "15px";
   container.appendChild(title);
 
-  // ✅ 每一天
+  // ✅ 每一天（卡片）
   project.days.forEach(day => {
     const div = document.createElement("div");
 
-    // 卡片樣式
-    div.style.border = "1px solid #ddd";
-    div.style.borderRadius = "10px";
-    div.style.padding = "10px";
-    div.style.marginBottom = "10px";
+    // ⭐ 強化卡片感
+    div.style.background = "#ffffff";
+    div.style.borderRadius = "16px";
+    div.style.padding = "15px";
+    div.style.marginBottom = "15px";
+    div.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)";
 
-    // ✅ 完成數
     const doneCount = day.activities.filter(a => a.done).length;
 
     const h3 = document.createElement("h3");
     h3.innerText = `${day.date}｜${day.title} (${doneCount}/${day.activities.length})`;
+    h3.style.marginBottom = "10px";
     div.appendChild(h3);
 
-    // ✅ 活動
+    // ✅ 活動列表
     day.activities.forEach(act => {
       const row = document.createElement("div");
+
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.padding = "8px 0";
+      row.style.borderBottom = "1px solid #eee";
 
       const cb = document.createElement("input");
       cb.type = "checkbox";
       cb.checked = act.done;
+      cb.style.marginRight = "10px";
 
-      // ⭐ 修正：立即更新 UI
       cb.onchange = async () => {
         act.done = cb.checked;
         render();
         await updateActivity(act.id, cb.checked);
       };
 
-      row.appendChild(cb);
-
       const text = document.createElement("span");
-      text.innerText = ` ${act.name} ¥${act.cost}`;
+      text.innerText = `${act.name} ¥${act.cost}`;
 
       if (act.done) {
         text.style.textDecoration = "line-through";
         text.style.color = "#999";
       }
 
+      row.appendChild(cb);
       row.appendChild(text);
+
       div.appendChild(row);
     });
 
@@ -154,7 +172,7 @@ function render() {
   });
 }
 
-// ✅ 更新資料（寫回 Sheet）
+// ✅ 更新
 async function updateActivity(activityId, done) {
   try {
     await fetch(API_URL, {
