@@ -548,20 +548,23 @@ function renderTabBar(){
 
   document.body.appendChild(bar);
 }
-
 // =================
 // 更新
 // =================
-await fetch(API_URL,{
-  method:"POST",
-  body:JSON.stringify({
-    token: TOKEN,
-    type:"updateActivity",
-    activityId:id,
-    done
-  })
-});
-
+async function updateActivity(id, done){
+  await fetch(API_URL,{
+    method:"POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      token: TOKEN,
+      type:"updateActivity",
+      activityId: id,
+      done: done
+    })
+  });
+}
 // =================
 // 編輯
 // =================
