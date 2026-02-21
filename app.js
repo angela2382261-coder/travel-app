@@ -343,5 +343,97 @@ async function updateActivity(id,done){
 // 編輯
 // =================
 function openEditor(act){
-  alert("長按成功！之後升級編輯UI");
+
+  // ===== overlay =====
+  const overlay = document.createElement("div");
+  overlay.style.position="fixed";
+  overlay.style.inset="0";
+  overlay.style.background="rgba(0,0,0,0.25)";
+  overlay.style.zIndex="999";
+
+  // ===== bottom sheet =====
+  const sheet = document.createElement("div");
+  sheet.style.position="fixed";
+  sheet.style.bottom="0";
+  sheet.style.left="0";
+  sheet.style.right="0";
+  sheet.style.background="#fff";
+  sheet.style.borderRadius="20px 20px 0 0";
+  sheet.style.padding="16px";
+  sheet.style.transform="translateY(100%)";
+  sheet.style.transition="0.3s";
+  sheet.style.zIndex="1000";
+
+  // ===== title =====
+  const title=document.createElement("div");
+  title.innerText="編輯行程";
+  title.style.fontWeight="800";
+  title.style.fontSize="18px";
+  title.style.marginBottom="12px";
+
+  // ===== input =====
+  const name=document.createElement("input");
+  name.value=act.name;
+
+  const cost=document.createElement("input");
+  cost.type="number";
+  cost.value=act.cost;
+
+  const note=document.createElement("input");
+  note.value=act.note;
+
+  [name,cost,note].forEach(i=>{
+    i.style.width="100%";
+    i.style.marginBottom="10px";
+    i.style.padding="12px";
+    i.style.borderRadius="12px";
+    i.style.border="1px solid #eee";
+  });
+
+  // ===== save =====
+  const save=document.createElement("button");
+  save.innerText="儲存";
+  save.style.width="100%";
+  save.style.padding="14px";
+  save.style.borderRadius="14px";
+  save.style.background="#007aff";
+  save.style.color="#fff";
+  save.style.border="none";
+
+  save.onclick=async()=>{
+    act.name=name.value;
+    act.cost=Number(cost.value);
+    act.note=note.value;
+
+    close();
+    render();
+
+    await updateActivity(act.id, act.done);
+  };
+
+  // ===== close =====
+  function close(){
+    sheet.style.transform="translateY(100%)";
+    overlay.style.opacity="0";
+    setTimeout(()=>{
+      overlay.remove();
+      sheet.remove();
+    },300);
+  }
+
+  overlay.onclick=close;
+
+  // ===== append =====
+  sheet.appendChild(title);
+  sheet.appendChild(name);
+  sheet.appendChild(cost);
+  sheet.appendChild(note);
+  sheet.appendChild(save);
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(sheet);
+
+  setTimeout(()=>{
+    sheet.style.transform="translateY(0)";
+  },10);
 }
