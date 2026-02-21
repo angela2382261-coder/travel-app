@@ -293,6 +293,50 @@ tag.style.border = "1px solid rgba(255,255,255,0.4)";
 
       info.appendChild(tagWrap);
 
+
+//備選餐廳
+      // ===== 右側按鈕容器 =====
+const rightBtns = document.createElement("div");
+rightBtns.style.display = "flex";
+rightBtns.style.gap = "6px";
+rightBtns.style.marginLeft = "auto";
+
+
+// 🍽 備選（👉 放這裡！）
+if(
+  act.category?.trim() === "食物" &&
+  act.alt?.name?.trim()
+){
+  const altBtn = document.createElement("button");
+  altBtn.innerText = "🍽";
+  altBtn.style.fontSize = "16px";
+
+  altBtn.onclick = (e)=>{
+    e.stopPropagation();
+    openFoodOptions(act);
+  };
+
+  rightBtns.appendChild(altBtn);
+}
+
+
+// 📍 地圖
+const mapBtn = document.createElement("button");
+mapBtn.innerText = "📍";
+
+mapBtn.onclick = (e)=>{
+  e.stopPropagation();
+  if(act.map) window.open(act.map);
+};
+
+rightBtns.appendChild(mapBtn);
+
+
+// ===== 組裝 =====
+top.appendChild(cb);
+top.appendChild(info);
+top.appendChild(rightBtns);
+      
       // ⭐ 地圖
       const mapBtn=document.createElement("button");
       mapBtn.innerText="📍";
