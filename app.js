@@ -556,7 +556,12 @@ function renderTabBar(){
 async function updateActivity(id,done){
   await fetch(API_URL,{
     method:"POST",
-    body:JSON.stringify({type:"updateActivity",activityId:id,done})
+    body:JSON.stringify({
+      type:"updateActivity",
+      activityId:id,
+      done,
+      token:"MY_SECRET_123"   // ⭐ 加這行
+    })
   });
 }
 
