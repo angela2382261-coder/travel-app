@@ -172,36 +172,68 @@ function renderPlan(container) {
       cb.checked = act.done;
 
       const info = document.createElement("div");
+info.style.flex = "1";
+info.style.minWidth = "0";
 
-      const name = document.createElement("div");
-      name.innerText = act.name;
-      name.style.fontWeight = "700";
+// 名稱
+const name = document.createElement("div");
+name.innerText = act.name;
+name.style.fontSize = "18px";
+name.style.fontWeight = "700";
 
-      const price = document.createElement("div");
-      price.innerText = `¥${act.cost}`;
-      price.style.background = "#e0f2fe";
-      price.style.padding = "6px 12px";
-      price.style.borderRadius = "999px";
+// 金額
+const price = document.createElement("div");
+price.innerText = `¥${act.cost}`;
+price.style.display = "inline-block";
+price.style.marginTop = "6px";
+price.style.padding = "6px 12px";
+price.style.borderRadius = "999px";
+price.style.background = "#e0f2fe";
+price.style.fontWeight = "700";
 
-      info.appendChild(name);
-      info.appendChild(price);
+// 備註
+if (act.note) {
+  const note = document.createElement("div");
+  note.innerText = act.note;
+  note.style.marginTop = "6px";
+  note.style.fontSize = "13px";
+  note.style.color = "#6b7280";
+  info.appendChild(note);
+}
 
-      if (act.note) {
-        const note = document.createElement("div");
-        note.innerText = act.note;
-        note.style.fontSize = "13px";
-        note.style.color = "#666";
-        info.appendChild(note);
-      }
+// ⭐ tag container（只出現一次！）
+const tagWrap = document.createElement("div");
+tagWrap.style.display = "flex";
+tagWrap.style.flexWrap = "wrap";
+tagWrap.style.gap = "6px";
+tagWrap.style.marginTop = "6px";
 
-      top.appendChild(cb);
-      top.appendChild(info);
-      row.appendChild(top);
-      card.appendChild(row);
-    });
+// 分類 tag
+const cat = document.createElement("span");
+cat.innerText = act.category;
+cat.style.fontSize = "12px";
+cat.style.padding = "4px 10px";
+cat.style.borderRadius = "999px";
+cat.style.background = "#eee";
+tagWrap.appendChild(cat);
 
-    page.appendChild(card);
-    track.appendChild(page);
+// 交通 tag
+parseNoteTags(act.note).forEach(t => {
+  const tag = document.createElement("span");
+  tag.innerText = t;
+  tag.style.fontSize = "12px";
+  tag.style.padding = "4px 8px";
+  tag.style.borderRadius = "999px";
+  tag.style.background = "#eef2ff";
+  tagWrap.appendChild(tag);
+});
+
+// ⭐ 正確順序（很重要）
+info.appendChild(name);
+info.appendChild(price);
+info.appendChild(tagWrap);
+
+      
   });
 
   container.appendChild(slider);
