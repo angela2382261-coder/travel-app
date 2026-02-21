@@ -101,6 +101,7 @@ function renderPlan(container){
 
   const slider = document.createElement("div");
   slider.style.overflow="hidden";
+  slider.style.touchAction = "pan-y";
 
   const track = document.createElement("div");
   track.style.display="flex";
@@ -126,6 +127,44 @@ function renderPlan(container){
    day.activities.forEach((act) => {
 
   const row = document.createElement("div");
+// ⭐⭐⭐ 放這裡 ⭐⭐⭐
+let pressTimer = null;
+let startX = 0;
+let startY = 0;
+
+row.addEventListener("touchstart", (e) => {
+  const t = e.touches[0];
+
+  startX = t.clientX;
+  startY = t.clientY;
+
+  pressTimer = setTimeout(() => {
+    openEditor(act); // 👉 長按觸發
+  }, 500);
+
+}, { passive: false });
+
+row.addEventListener("touchmove", (e) => {
+  const t = e.touches[0];
+
+  const dx = Math.abs(t.clientX - startX);
+  const dy = Math.abs(t.clientY - startY);
+
+  if (dx > 10 || dy > 10) {
+    clearTimeout(pressTimer); // 👉 滑動就取消
+  }
+
+}, { passive: true });
+
+row.addEventListener("touchend", () => {
+  clearTimeout(pressTimer);
+}, { passive: true });
+
+row.addEventListener("touchcancel", () => {
+  clearTimeout(pressTimer);
+}, { passive: true });
+
+     
   row.style.display = "flex";
   row.style.flexDirection = "column";
   row.style.padding = "14px 0";
@@ -195,11 +234,22 @@ function renderPlan(container){
   tag.style.padding = "4px 10px";
   tag.style.borderRadius = "999px";
   tag.style.background = "#eee";
+     
+// ⭐ 原始備註（顯示完整內容）
+if (act.note) {
+  const noteText = document.createElement("div");
+  noteText.innerText = act.note;
 
-  info.appendChild(name);
-  info.appendChild(price);
-  info.appendChild(tag);
+  noteText.style.marginTop = "6px";
+  noteText.style.fontSize = "13px";
+  noteText.style.color = "#6b7280";
+  noteText.style.lineHeight = "1.4";
 
+  info.appendChild(noteText);
+}
+
+info.appendChild(tagWrap);
+  
   if (act.done) {
     info.style.opacity = "0.5";
     name.style.textDecoration = "line-through";
