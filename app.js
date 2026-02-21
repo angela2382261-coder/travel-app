@@ -34,7 +34,7 @@ function loadFromSheet() {
 async function init() {
   renderLoading();
   const sheetData = await loadFromSheet();
-  appData = convertSheetToAppData(sheetData);
+  appData = convert(sheetData);
   render();
 }
 
@@ -43,7 +43,7 @@ init();
 // =================
 // 🔄 資料轉換
 // =================
-function convertSheetToAppData(data) {
+function convert(data) {
   const { projects, days, activities, meta } = data;
 
   const result = { projects: [] };
@@ -60,6 +60,7 @@ function convertSheetToAppData(data) {
       .filter(d => d.projectId === p.projectId)
       .map(d => ({
         title: d.title,
+        date: d.date,
         activities: activities
           .filter(a => a.dayId === d.dayId)
           .map(a => ({
@@ -91,6 +92,7 @@ function render() {
   container.innerHTML = "";
   container.style.padding = "15px";
   container.style.background = "#f5f5f5";
+  container.style.fontFamily = "-apple-system";
 
   const project = appData.projects[0];
 
@@ -147,9 +149,7 @@ function render() {
 
   chartCard.appendChild(canvas);
 
-  // =================
-  // 📊 分類文字（重點升級✨）
-  // =================
+  // 分類文字
   i = 0;
   for (let k in stats) {
     const item = document.createElement("div");
@@ -159,9 +159,6 @@ function render() {
     i++;
   }
 
-  // =================
-  // 💰 總金額
-  // =================
   const totalText = document.createElement("div");
   totalText.style.marginTop = "10px";
   totalText.innerHTML = `💰 總花費：¥${total} / ¥${project.budget.total}`;
@@ -184,11 +181,17 @@ function render() {
     const doneCount = day.activities.filter(a => a.done).length;
 
     const title = document.createElement("h3");
-    title.innerText = `${day.title} (${doneCount}/${day.activities.length})`;
+    title.innerText = `${day.date}｜${day.title} (${doneCount}/${day.activities.length})`;
     card.appendChild(title);
 
     day.activities.forEach(act => {
       const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.justifyContent = "space-between";
+      row.style.alignItems = "center";
+      row.style.marginBottom = "10px";
+
+      const left = document.createElement("div");
 
       const cb = document.createElement("input");
       cb.type = "checkbox";
@@ -200,6 +203,24 @@ function render() {
         await updateActivity(act.id, cb.checked);
       };
 
+      // 分類 tag
+      const tag = document.createElement("span");
+      tag.innerText = act.category;
+
+      const colorsMap = {
+        "食物": "#ffe4e6",
+        "景點": "#e0f2fe",
+        "交通": "#fef9c3",
+        "飯店": "#dcfce7",
+        "其他": "#eee"
+      };
+
+      tag.style.background = colorsMap[act.category] || "#eee";
+      tag.style.padding = "2px 8px";
+      tag.style.borderRadius = "8px";
+      tag.style.marginRight = "6px";
+      tag.style.fontSize = "12px";
+
       const text = document.createElement("span");
       text.innerText = ` ${act.name} ¥${act.cost}`;
 
@@ -208,8 +229,30 @@ function render() {
         text.style.color = "#999";
       }
 
-      row.appendChild(cb);
-      row.appendChild(text);
+      left.appendChild(cb);
+      left.appendChild(tag);
+      left.appendChild(text);
+
+      // 📍 地圖
+      const mapBtn = document.createElement("button");
+      mapBtn.innerText = "📍";
+      mapBtn.style.border = "none";
+      mapBtn.style.background = "#eee";
+      mapBtn.style.borderRadius = "8px";
+      mapBtn.style.padding = "6px";
+      mapBtn.style.cursor = "pointer";
+
+      mapBtn.onclick = () => {
+        if (act.map) {
+          window.open(act.map, "_blank");
+        } else {
+          alert("沒有地圖連結");
+        }
+      };
+
+      row.appendChild(left);
+      row.appendChild(mapBtn);
+
       card.appendChild(row);
     });
 
