@@ -55,17 +55,24 @@ function convert(data) {
         .filter(d => d.projectId === p.projectId)
         .map(d => ({
           title: d.title,
-          activities: activities
-            .filter(a => a.dayId === d.dayId)
-            .map(a => ({
-              id: a.activityId,
-              name: a.name,
-              cost: Number(a.cost)||0,
-              done: a.done === true || a.done === "TRUE",
-              category: a.category || "其他",
-              map: a.map || "",
-              note: a.note || ""
-            }))
+          activities
+  .filter(a => a.dayId === d.dayId)
+  .map(a => ({
+    id: a.activityId,
+    name: a.name,
+    cost: Number(a.cost)||0,
+    done: a.done === true || a.done === "TRUE",
+    category: a.category || "其他",
+    map: a.map || "",
+    note: a.note || "",
+
+    // ⭐⭐⭐ 就是加在這裡 ⭐⭐⭐
+    alt: {
+      name: a.alt_name || "",
+      time: a.alt_time || "",
+      map: a.alt_map || ""
+    }
+  }))
         }))
     }))
   };
@@ -295,21 +302,24 @@ tag.style.border = "1px solid rgba(255,255,255,0.4)";
 
 
 //備選餐廳
-      // ===== 右側按鈕容器 =====
+// ===== 右側按鈕容器 =====
 const rightBtns = document.createElement("div");
 rightBtns.style.display = "flex";
 rightBtns.style.gap = "6px";
 rightBtns.style.marginLeft = "auto";
 
-
-// 🍽 備選（👉 放這裡！）
+// 🍽 備選（修正完整版）
 if(
   act.category?.trim() === "食物" &&
   act.alt?.name?.trim()
 ){
   const altBtn = document.createElement("button");
   altBtn.innerText = "🍽";
-  altBtn.style.fontSize = "16px";
+  altBtn.style.padding = "6px 10px";
+  altBtn.style.borderRadius = "10px";
+  altBtn.style.border = "none";
+  altBtn.style.background = "rgba(255,255,255,0.6)";
+  altBtn.style.backdropFilter = "blur(6px)";
 
   altBtn.onclick = (e)=>{
     e.stopPropagation();
@@ -319,10 +329,14 @@ if(
   rightBtns.appendChild(altBtn);
 }
 
-
-// 📍 地圖
+// 📍 地圖（只留這一個）
 const mapBtn = document.createElement("button");
 mapBtn.innerText = "📍";
+mapBtn.style.padding = "6px 10px";
+mapBtn.style.borderRadius = "10px";
+mapBtn.style.border = "none";
+mapBtn.style.background = "rgba(255,255,255,0.6)";
+mapBtn.style.backdropFilter = "blur(6px)";
 
 mapBtn.onclick = (e)=>{
   e.stopPropagation();
@@ -331,25 +345,10 @@ mapBtn.onclick = (e)=>{
 
 rightBtns.appendChild(mapBtn);
 
-
-// ===== 組裝 =====
+// ⭐⭐⭐ 唯一組裝（重點🔥）
 top.appendChild(cb);
 top.appendChild(info);
 top.appendChild(rightBtns);
-      
-      // ⭐ 地圖
-      const mapBtn=document.createElement("button");
-      mapBtn.innerText="📍";
-      mapBtn.style.marginLeft="auto";
-
-      mapBtn.onclick=(e)=>{
-        e.stopPropagation();
-        if(act.map) window.open(act.map);
-      };
-
-      top.appendChild(cb);
-      top.appendChild(info);
-      top.appendChild(mapBtn);
 
       row.appendChild(top);
       card.appendChild(row);
