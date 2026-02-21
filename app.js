@@ -5,6 +5,8 @@ let appData = null;
 let currentTab = "plan"; // plan / stats
 let currentDayIndex = 0;
 let expanded = {}; // ⭐控制展開
+let pressTimer = null;
+let editingAct = null;
 
 // =================
 // ⏳ Loading
@@ -753,4 +755,220 @@ async function updateActivity(activityId, done) {
   } catch (e) {
     console.error("更新失敗", e);
   }
+
+  function ensureEditorUI() {
+  if (document.getElementById("editorOverlay")) return;
+
+  // overlay
+  const overlay = document.createElement("div");
+  overlay.id = "editorOverlay";
+  overlay.style.cssText = `
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.25);
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s ease;
+    z-index: 9998;
+  `;
+  overlay.addEventListener("click", closeEditor);
+
+  // sheet
+  const sheet = document.createElement("div");
+  sheet.id = "editorSheet";
+  sheet.style.cssText = `
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: #fff;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    box-shadow: 0 -18px 40px rgba(0,0,0,0.18);
+    transform: translateY(110%);
+    transition: transform .35s cubic-bezier(.22,1,.36,1);
+    z-index: 9999;
+    padding: 14px 16px 18px;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  `;
+
+  sheet.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+      <button id="btnCancel" style="
+        border:none; background:transparent; color:#2563eb; font-size:16px; padding:8px 6px;
+      ">取消</button>
+
+      <div style="font-weight:800; font-size:16px;">編輯行程</div>
+
+      <button id="btnSave" style="
+        border:none; background:#2563eb; color:#fff; font-size:16px;
+        padding:9px 14px; border-radius:12px; font-weight:700;
+      ">儲存</button>
+    </div>
+
+    <div style="height:8px;"></div>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      ${fieldRow("名稱", `<input id="fName" type="text" placeholder="例如：大阪城" />`)}
+      ${fieldRow("金額", `<input id="fCost" type="number" inputmode="numeric" placeholder="例如：1500" />`)}
+      ${fieldRow("分類", `
+        <select id="fCategory">
+          <option>食物</option>
+          <option>景點</option>
+          <option>交通</option>
+          <option>飯店</option>
+          <option>其他</option>
+        </select>
+      `)}
+      ${fieldRow("備註", `<input id="fNote" type="text" placeholder="例如：JR／地鐵／步行…" />`)}
+      ${fieldRow("地圖連結", `<input id="fMap" type="url" placeholder="https://maps.apple.com/..." />`)}
+    </div>
+
+    <div style="height:10px;"></div>
+
+    <button id="btnDelete" style="
+      width:100%;
+      border:1px solid #fecaca;
+      background:#fff1f2;
+      color:#b91c1c;
+      padding:12px 14px;
+      border-radius:14px;
+      font-weight:800;
+    ">刪除（可選）</button>
+  `;
+
+  // 共用 input style
+  const style = document.createElement("style");
+  style.textContent = `
+    #editorSheet input, #editorSheet select{
+      width:100%;
+      font-size:16px;
+      padding:12px 12px;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      outline:none;
+      background:#fff;
+    }
+    #editorSheet input:focus, #editorSheet select:focus{
+      border-color:#93c5fd;
+      box-shadow: 0 0 0 4px rgba(59,130,246,.12);
+    }
+  `;
+  document.head.appendChild(style);
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(sheet);
+
+  document.getElementById("btnCancel").onclick = closeEditor;
+  document.getElementById("btnSave").onclick = saveEditor;
+  document.getElementById("btnDelete").onclick = deleteEditor;
+}
+
+// 小工具：每一列
+function fieldRow(label, html) {
+  return `
+    <div>
+      <div style="font-size:12px; color:#6b7280; margin:0 0 6px 2px;">${label}</div>
+      ${html}
+    </div>
+  `;
+}
+
+// 打開 editor
+function openEditor(act) {
+  ensureEditorUI();
+  editingAct = act;
+
+  // 填值
+  document.getElementById("fName").value = act.name || "";
+  document.getElementById("fCost").value = Number(act.cost || 0);
+  document.getElementById("fCategory").value = act.category || "其他";
+  document.getElementById("fNote").value = act.note || "";
+  document.getElementById("fMap").value = act.map || "";
+
+  // show
+  const overlay = document.getElementById("editorOverlay");
+  const sheet = document.getElementById("editorSheet");
+  overlay.style.opacity = "1";
+  overlay.style.pointerEvents = "auto";
+  sheet.style.transform = "translateY(0)";
+
+  // iOS 느낌：避免背景滾動
+  document.body.style.overflow = "hidden";
+}
+
+function closeEditor() {
+  const overlay = document.getElementById("editorOverlay");
+  const sheet = document.getElementById("editorSheet");
+  if (!overlay || !sheet) return;
+
+  overlay.style.opacity = "0";
+  overlay.style.pointerEvents = "none";
+  sheet.style.transform = "translateY(110%)";
+
+  document.body.style.overflow = "";
+  editingAct = null;
+}
+
+// 儲存（前端先更新 + 回寫 Apps Script）
+async function saveEditor() {
+  if (!editingAct) return;
+
+  const name = document.getElementById("fName").value.trim();
+  const cost = Number(document.getElementById("fCost").value || 0);
+  const category = document.getElementById("fCategory").value;
+  const note = document.getElementById("fNote").value.trim();
+  const map = document.getElementById("fMap").value.trim();
+
+  // 1) 先更新前端資料（立即反映）
+  editingAct.name = name || editingAct.name;
+  editingAct.cost = isNaN(cost) ? editingAct.cost : cost;
+  editingAct.category = category || editingAct.category;
+  editingAct.note = note;
+  editingAct.map = map;
+
+  closeEditor();
+  render();
+
+  // 2) 回寫後端（需要 Apps Script doPost 支援 updateActivityFields）
+  try {
+    await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        type: "updateActivityFields",
+        activityId: editingAct.id,
+        fields: { name, cost, category, note, map }
+      })
+    });
+  } catch (e) {
+    console.error("儲存失敗", e);
+    alert("儲存到雲端失敗（但本機已更新），請稍後再試");
+  }
+}
+
+// 刪除（可選：前端先移除 + 回寫）
+async function deleteEditor() {
+  if (!editingAct) return;
+  const ok = confirm("確定要刪除這筆行程？");
+  if (!ok) return;
+
+  const id = editingAct.id;
+  closeEditor();
+
+  // 1) 前端移除
+  const project = appData.projects[0];
+  project.days.forEach(d => {
+    d.activities = d.activities.filter(a => a.id !== id);
+  });
+  render();
+
+  // 2) 回寫（需要 Apps Script doPost 支援 deleteActivity）
+  try {
+    await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        type: "deleteActivity",
+        activityId: id
+      })
+    });
+  } catch (e) {
+    console.error("刪除失敗", e);
+    alert("刪除到雲端失敗（但本機已刪），請稍後再試");
+  }
+}
 }
