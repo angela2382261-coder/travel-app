@@ -104,15 +104,30 @@ function render() {
   let total = 0;
   let stats = {};
 
-  project.days.forEach(day => {
-    day.activities.forEach(a => {
-      if (a.done) {
-        total += a.cost;
-        if (!stats[a.category]) stats[a.category] = 0;
-        stats[a.category] += a.cost;
-      }
-    });
-  });
+  project.days.forEach((day, index) => {
+
+  if (openState[index] === undefined) {
+    openState[index] = true;
+  }
+
+  const card = document.createElement("div");
+
+  const header = document.createElement("div");
+  header.innerText = `${day.title}`;
+  header.style.cursor = "pointer";
+
+  const content = document.createElement("div");
+
+  header.onclick = () => {
+    openState[index] = !openState[index];
+    render();
+  };
+
+  content.style.display = openState[index] ? "block" : "none";
+
+  card.appendChild(header);
+  card.appendChild(content);
+});
 
   const budget = document.createElement("div");
   budget.style.background = "#fff";
