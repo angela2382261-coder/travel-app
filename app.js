@@ -104,7 +104,7 @@ function parseNoteTags(note){
 // =================
 function render(){
  const app = document.getElementById("app");
-
+app.style.paddingTop = "max(20px, env(safe-area-inset-top))";
 // ⭐⭐⭐ 加這段 ⭐⭐⭐
 app.style.maxWidth = "420px";
 app.style.margin = "0 auto";
@@ -112,7 +112,7 @@ app.style.padding = "0 12px";
   document.body.style.background = "#f2f2f7"; // iOS 背景灰
   app.innerHTML = "";
   app.style.paddingTop = "10px";
-app.style.paddingBottom = "100px";
+app.style.paddingBottom = "120px";
 
   if(currentTab==="plan") renderPlan(app);
   else renderStats(app);
@@ -531,7 +531,9 @@ function renderTabBar(){
   bar.style.bottom="0";
   bar.style.width="100%";
   bar.style.display="flex";
-  bar.style.background="#fff";
+bar.style.padding = "14px 0 calc(20px + env(safe-area-inset-bottom))";
+bar.style.backdropFilter = "blur(20px)";
+bar.style.background = "rgba(255,255,255,0.85)";
   bar.style.borderTop="1px solid #eee";
 
   const mk=(k,t)=>{
