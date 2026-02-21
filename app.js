@@ -1,8 +1,4 @@
-·const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
-const TOKEN = "ANGELA_SECRET_123456";
-let appData = null;
-let currentTab = "plan";
-let currentDayIndex = 0;
+
 
 // =================
 // 🚀 初始化
