@@ -1,7 +1,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
 
 let appData = null;
-let openState = {}; // ⭐記住展開狀態
+let openState = {};
 
 // =================
 // ⏳ Loading
@@ -38,7 +38,6 @@ async function init() {
   appData = convert(sheetData);
   render();
 }
-
 init();
 
 // =================
@@ -61,7 +60,6 @@ function convert(data) {
       .filter(d => d.projectId === p.projectId)
       .map(d => ({
         title: d.title,
-        date: d.date,
         activities: activities
           .filter(a => a.dayId === d.dayId)
           .map(a => ({
@@ -91,15 +89,11 @@ function convert(data) {
 function render() {
   const container = document.getElementById("app");
   container.innerHTML = "";
-  container.style.padding = "16px";
-  container.style.background = "#f2f2f7";
-  container.style.fontFamily = "-apple-system";
-  container.style.fontSize = "18px";
 
   const project = appData.projects[0];
 
   // =================
-  // 💰 花費統計
+  // 💰 花費
   // =================
   let total = 0;
   let stats = {};
@@ -108,55 +102,39 @@ function render() {
     day.activities.forEach(a => {
       if (a.done) {
         total += a.cost;
-
-        if (!stats[a.category]) stats[a.category] = 0;
-        stats[a.category] += a.cost;
+        stats[a.category] = (stats[a.category] || 0) + a.cost;
       }
     });
   });
 
   // =================
-  // 💰 總卡片
+  // 💰 預算卡
   // =================
   const budget = document.createElement("div");
-  budget.style.background = "#fff";
-  budget.style.padding = "16px";
-  budget.style.borderRadius = "16px";
-  budget.style.marginBottom = "16px";
-  budget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.06)";
+  budget.className = "budget";
 
-  budget.innerHTML = `💰 ¥${total} / ¥${project.budget.total}<br>`;
-
+  let html = `💰 ¥${total} / ¥${project.budget.total}<br>`;
   for (let k in stats) {
-    budget.innerHTML += `📊 ${k}：¥${stats[k]}<br>`;
+    html += `📊 ${k}：¥${stats[k]}<br>`;
   }
 
+  budget.innerHTML = html;
   container.appendChild(budget);
 
   // =================
-  // 🗓 每日卡片
+  // 🗓 卡片
   // =================
   project.days.forEach((day, index) => {
 
     if (openState[index] === undefined) openState[index] = true;
 
     const card = document.createElement("div");
-    card.style.background = "#fff";
-    card.style.borderRadius = "18px";
-    card.style.marginBottom = "16px";
-    card.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)";
-    card.style.overflow = "hidden";
+    card.className = "card";
 
     const doneCount = day.activities.filter(a => a.done).length;
 
-    // 📌 header
     const header = document.createElement("div");
-    header.style.padding = "16px";
-    header.style.fontWeight = "600";
-    header.style.fontSize = "20px";
-    header.style.cursor = "pointer";
-    header.style.background = "#fafafa";
-
+    header.className = "header";
     header.innerText = `${day.title} (${doneCount}/${day.activities.length})`;
 
     header.onclick = () => {
@@ -169,27 +147,17 @@ function render() {
     const content = document.createElement("div");
     content.style.display = openState[index] ? "block" : "none";
 
-    // =================
-    // 📌 行程
-    // =================
     day.activities.forEach(act => {
 
       const row = document.createElement("div");
-      row.style.display = "flex";
-      row.style.justifyContent = "space-between";
-      row.style.alignItems = "center";
-      row.style.padding = "12px 16px";
-      row.style.borderTop = "1px solid #eee";
+      row.className = "row";
 
       const left = document.createElement("div");
-      left.style.display = "flex";
-      left.style.alignItems = "center";
-      left.style.gap = "8px";
+      left.className = "left";
 
       const cb = document.createElement("input");
       cb.type = "checkbox";
       cb.checked = act.done;
-      cb.style.transform = "scale(1.3)";
 
       cb.onchange = async () => {
         act.done = cb.checked;
@@ -197,37 +165,23 @@ function render() {
         await updateActivity(act.id, cb.checked);
       };
 
-      // 🏷 分類標籤
       const tag = document.createElement("span");
-      tag.innerText = act.category;
-      tag.style.fontSize = "12px";
-      tag.style.padding = "3px 6px";
-      tag.style.borderRadius = "6px";
-
-      if (act.category === "食物") tag.style.background = "#ffe4e6";
-      else if (act.category === "景點") tag.style.background = "#e0f2fe";
-      else if (act.category === "交通") tag.style.background = "#fef9c3";
-      else if (act.category === "飯店") tag.style.background = "#dcfce7";
+      tag.className = "tag " + act.category;
 
       const text = document.createElement("span");
       text.innerText = `${act.name} ¥${act.cost}`;
 
       if (act.done) {
-        text.style.textDecoration = "line-through";
-        text.style.color = "#999";
+        text.className = "done";
       }
 
       left.appendChild(cb);
       left.appendChild(tag);
       left.appendChild(text);
 
-      // 📍 地圖
       const mapBtn = document.createElement("button");
+      mapBtn.className = "mapBtn";
       mapBtn.innerText = "📍";
-      mapBtn.style.border = "none";
-      mapBtn.style.background = "#eee";
-      mapBtn.style.borderRadius = "10px";
-      mapBtn.style.padding = "6px 10px";
 
       mapBtn.onclick = () => {
         if (act.map) window.open(act.map, "_blank");
