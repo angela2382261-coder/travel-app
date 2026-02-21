@@ -370,5 +370,146 @@ async function updateActivity(id,done){
 // 編輯
 // =================
 function openEditor(act){
-  alert("長按成功，可擴充編輯 UI");
+
+  // ===== 防止重複開 =====
+  if(document.getElementById("editorOverlay")) return;
+
+  // ===== overlay =====
+  const overlay = document.createElement("div");
+  overlay.id = "editorOverlay";
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    opacity: 0;
+    transition: opacity .25s ease;
+    z-index: 999;
+  `;
+
+  // ===== sheet =====
+  const sheet = document.createElement("div");
+  sheet.id = "editorSheet";
+  sheet.style.cssText = `
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    padding: 16px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    transform: translateY(110%);
+    transition: transform .35s cubic-bezier(.22,1,.36,1);
+    z-index: 1000;
+  `;
+
+  // ===== header =====
+  const header = document.createElement("div");
+  header.style.display="flex";
+  header.style.justifyContent="space-between";
+  header.style.alignItems="center";
+  header.style.marginBottom="12px";
+
+  const cancel = document.createElement("button");
+  cancel.innerText="取消";
+  cancel.style.border="none";
+  cancel.style.background="transparent";
+  cancel.style.color="#007aff";
+
+  const title = document.createElement("div");
+  title.innerText="編輯行程";
+  title.style.fontWeight="800";
+
+  const save = document.createElement("button");
+  save.innerText="儲存";
+  save.style.background="#007aff";
+  save.style.color="#fff";
+  save.style.border="none";
+  save.style.padding="8px 14px";
+  save.style.borderRadius="10px";
+
+  header.appendChild(cancel);
+  header.appendChild(title);
+  header.appendChild(save);
+
+  // ===== input =====
+  function makeInput(value, type="text"){
+    const i=document.createElement("input");
+    i.value=value||"";
+    i.type=type;
+    i.style.cssText=`
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid #eee;
+      margin-bottom:10px;
+      font-size:16px;
+    `;
+    return i;
+  }
+
+  const name = makeInput(act.name);
+  const cost = makeInput(act.cost, "number");
+  const note = makeInput(act.note);
+  const map = makeInput(act.map);
+
+  const category = document.createElement("select");
+  ["食物","景點","交通","飯店","其他"].forEach(c=>{
+    const o=document.createElement("option");
+    o.value=c;
+    o.innerText=c;
+    if(c===act.category) o.selected=true;
+    category.appendChild(o);
+  });
+  category.style.cssText=`
+    width:100%;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid #eee;
+    margin-bottom:10px;
+  `;
+
+  // ===== append =====
+  sheet.appendChild(header);
+  sheet.appendChild(name);
+  sheet.appendChild(cost);
+  sheet.appendChild(category);
+  sheet.appendChild(note);
+  sheet.appendChild(map);
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(sheet);
+
+  // ===== 開啟動畫 =====
+  setTimeout(()=>{
+    overlay.style.opacity="1";
+    sheet.style.transform="translateY(0)";
+  },10);
+
+  // ===== 關閉 =====
+  function close(){
+    overlay.style.opacity="0";
+    sheet.style.transform="translateY(110%)";
+    setTimeout(()=>{
+      overlay.remove();
+      sheet.remove();
+    },300);
+  }
+
+  overlay.onclick = close;
+  cancel.onclick = close;
+
+  // ===== 儲存 =====
+  save.onclick = async ()=>{
+    act.name = name.value;
+    act.cost = Number(cost.value)||0;
+    act.category = category.value;
+    act.note = note.value;
+    act.map = map.value;
+
+    close();
+    render();
+
+    await updateActivity(act.id, act.done);
+  };
 }
