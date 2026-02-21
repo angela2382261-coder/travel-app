@@ -142,10 +142,31 @@ function renderPlan(container){
 
       const left=document.createElement("div");
       left.style.flex=1;
+      
+      // ✅ checkbox（你少這個）
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = act.done;
+  cb.style.transform = "scale(1.3)";
+  cb.style.marginTop = "6px";
 
+  cb.onchange = async () => {
+    act.done = cb.checked;
+    render();
+    await updateActivity(act.id, cb.checked);
+  };
+
+  // =================
+  // 文字區
+  // =================
+  const info = document.createElement("div");
+  info.style.flex = "1";
+  info.style.minWidth = "0";
+      
       const name=document.createElement("div");
       name.innerText=act.name;
       name.style.fontSize="18px";
+
 
       const price=document.createElement("div");
       price.innerText="¥"+act.cost;
