@@ -4,6 +4,7 @@ const API_URL =
 let appData = null;
 let currentTab = "plan"; // plan / stats
 let currentDayIndex = 0;
+let expanded = {}; // ⭐控制展開
 
 // =================
 // ⏳ Loading
@@ -167,14 +168,25 @@ function renderPlan(container) {
     title.style.fontWeight = "800";
     card.appendChild(title);
 
-    day.activities.forEach((act) => {
+    day.activities.forEach((act, i) => {
 
+  const key = act.id;
+
+  // =================
+  // 卡片 Row
+  // =================
   const row = document.createElement("div");
-  row.style.display = "flex";
-  row.style.justifyContent = "space-between";
-  row.style.alignItems = "center";
-  row.style.padding = "16px 0";
+  row.style.padding = "14px 0";
   row.style.borderTop = "1px solid #f1f1f1";
+  row.style.transition = "all 0.25s ease";
+
+  // =================
+  // 上層（主內容）
+  // =================
+  const top = document.createElement("div");
+  top.style.display = "flex";
+  top.style.justifyContent = "space-between";
+  top.style.alignItems = "center";
 
   // =================
   // 左側
@@ -191,9 +203,16 @@ function renderPlan(container) {
   cb.style.transform = "scale(1.4)";
   cb.style.marginTop = "6px";
 
+  // ⭐ 勾選動畫
   cb.onchange = async () => {
-    act.done = cb.checked;
-    render();
+    row.style.transform = "scale(0.97)";
+    row.style.opacity = "0.6";
+
+    setTimeout(() => {
+      act.done = cb.checked;
+      render();
+    }, 180);
+
     await updateActivity(act.id, cb.checked);
   };
 
@@ -203,21 +222,19 @@ function renderPlan(container) {
   const info = document.createElement("div");
   info.style.flex = "1";
 
-  // ⭐ 名稱
   const name = document.createElement("div");
   name.innerText = act.name;
   name.style.fontSize = "20px";
   name.style.fontWeight = "600";
 
-  // ⭐ 金額（重點🔥）
   const price = document.createElement("div");
   price.innerText = `¥${act.cost.toLocaleString()}`;
   price.style.fontSize = "16px";
   price.style.fontWeight = "700";
-  price.style.color = "#2563eb"; // 藍色醒目
+  price.style.color = "#2563eb";
 
   // =================
-  // 🏷 Tag 區
+  // Tag
   // =================
   const tagWrap = document.createElement("div");
   tagWrap.style.marginTop = "8px";
@@ -225,10 +242,8 @@ function renderPlan(container) {
   tagWrap.style.flexWrap = "wrap";
   tagWrap.style.gap = "6px";
 
-  // 分類 tag（彩色🔥）
   const catTag = document.createElement("span");
   catTag.innerText = act.category;
-
   catTag.style.fontSize = "12px";
   catTag.style.padding = "5px 10px";
   catTag.style.borderRadius = "999px";
@@ -245,30 +260,22 @@ function renderPlan(container) {
   } else if (act.category === "飯店") {
     catTag.style.background = "#dcfce7";
     catTag.style.color = "#166534";
-  } else {
-    catTag.style.background = "#f1f5f9";
-    catTag.style.color = "#334155";
   }
 
   tagWrap.appendChild(catTag);
 
-  // ⭐ 備註 tag（交通方式）
+  // ⭐ 備註 tag
   parseNoteTags(act.note).forEach(t => {
     const tag = document.createElement("span");
     tag.innerText = t;
-
     tag.style.fontSize = "12px";
     tag.style.padding = "5px 10px";
     tag.style.borderRadius = "999px";
     tag.style.background = "#eef2ff";
     tag.style.color = "#3730a3";
-
     tagWrap.appendChild(tag);
   });
 
-  // =================
-  // 組合
-  // =================
   info.appendChild(name);
   info.appendChild(price);
   info.appendChild(tagWrap);
@@ -286,7 +293,6 @@ function renderPlan(container) {
   // =================
   const mapBtn = document.createElement("button");
   mapBtn.innerText = "📍";
-
   mapBtn.style.border = "none";
   mapBtn.style.background = "#f1f5f9";
   mapBtn.style.borderRadius = "14px";
@@ -298,8 +304,50 @@ function renderPlan(container) {
     if (act.map) window.open(act.map, "_blank");
   };
 
-  row.appendChild(left);
-  row.appendChild(mapBtn);
+  top.appendChild(left);
+  top.appendChild(mapBtn);
+
+  // =================
+  // 🔽 展開區（重點🔥）
+  // =================
+  const detail = document.createElement("div");
+  detail.style.maxHeight = expanded[key] ? "200px" : "0";
+  detail.style.overflow = "hidden";
+  detail.style.transition = "all 0.3s ease";
+  detail.style.fontSize = "14px";
+  detail.style.color = "#666";
+  detail.style.paddingLeft = "40px";
+
+  detail.innerHTML = `
+    ${act.note ? "📝 " + act.note + "<br>" : ""}
+    ${act.map ? "📍 點右側可開地圖" : ""}
+  `;
+
+  // =================
+  // 點擊展開
+  // =================
+  row.onclick = () => {
+    expanded[key] = !expanded[key];
+    render();
+  };
+
+  // =================
+  // 長按（未來編輯）
+  // =================
+  let pressTimer;
+
+  row.addEventListener("touchstart", () => {
+    pressTimer = setTimeout(() => {
+      alert("🛠 未來可編輯這筆行程");
+    }, 500);
+  });
+
+  row.addEventListener("touchend", () => {
+    clearTimeout(pressTimer);
+  });
+
+  row.appendChild(top);
+  row.appendChild(detail);
 
   card.appendChild(row);
 });
