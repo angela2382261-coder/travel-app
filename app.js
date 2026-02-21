@@ -1,4 +1,3 @@
-
 const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L45cKqMwqvUZ3ApK3PnIjLmasYYeUMWXArHLGwhJfI7LgL/exec";
 
 let appData = null;
@@ -556,12 +555,7 @@ function renderTabBar(){
 async function updateActivity(id,done){
   await fetch(API_URL,{
     method:"POST",
-    body:JSON.stringify({
-      type:"updateActivity",
-      activityId:id,
-      done,
-      token:"MY_SECRET_123"   // ⭐ 加這行
-    })
+    body:JSON.stringify({type:"updateActivity",activityId:id,done})
   });
 }
 
