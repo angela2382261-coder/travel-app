@@ -123,27 +123,33 @@ function renderPlan(container){
     title.innerText=day.title;
     card.appendChild(title);
 
-    day.activities.forEach(act=>{
-      const row=document.createElement("div");
-      row.style.borderTop="1px solid #eee";
-      row.style.padding="12px 0";
+   day.activities.forEach((act) => {
 
-      // 長按
-      let timer=null;
-      row.ontouchstart=()=>{
-        timer=setTimeout(()=>openEditor(act),450);
-      };
-      row.ontouchend=()=>clearTimeout(timer);
-      row.ontouchmove=()=>clearTimeout(timer);
+  const row = document.createElement("div");
+  row.style.display = "flex";
+  row.style.flexDirection = "column";
+  row.style.padding = "14px 0";
+  row.style.borderTop = "1px solid #eee";
 
-      // top
-      const top=document.createElement("div");
-      top.style.display="flex";
+  // =================
+  // ⭐ 上排（主內容）
+  // =================
+  const top = document.createElement("div");
+  top.style.display = "flex";
+  top.style.alignItems = "flex-start";
+  top.style.gap = "12px";
 
-      const left=document.createElement("div");
-      left.style.flex=1;
-      
-      // ✅ checkbox（你少這個）
+  // =================
+  // 左側（checkbox + 內容）
+  // =================
+  const left = document.createElement("div");
+  left.style.display = "flex";
+  left.style.alignItems = "flex-start";
+  left.style.gap = "12px";
+  left.style.flex = "1";
+  left.style.minWidth = "0"; // ⭐關鍵
+
+  // ✅ checkbox（你少這個）
   const cb = document.createElement("input");
   cb.type = "checkbox";
   cb.checked = act.done;
@@ -162,52 +168,69 @@ function renderPlan(container){
   const info = document.createElement("div");
   info.style.flex = "1";
   info.style.minWidth = "0";
-      
-      const name=document.createElement("div");
-      name.innerText=act.name;
-      name.style.fontSize="18px";
 
+  // 名稱
+  const name = document.createElement("div");
+  name.innerText = act.name;
+  name.style.fontSize = "20px";
+  name.style.fontWeight = "700";
+  name.style.wordBreak = "break-word";
 
-      const price=document.createElement("div");
-      price.innerText="¥"+act.cost;
-      price.style.background="#e0f2fe";
-      price.style.display="inline-block";
-      price.style.padding="4px 10px";
-      price.style.borderRadius="999px";
+  // 金額（膠囊）
+  const price = document.createElement("div");
+  price.innerText = `¥${act.cost}`;
+  price.style.display = "inline-block";
+  price.style.marginTop = "6px";
+  price.style.padding = "6px 12px";
+  price.style.borderRadius = "999px";
+  price.style.background = "#e0f2fe";
+  price.style.color = "#075985";
+  price.style.fontWeight = "700";
 
-      const tags=document.createElement("div");
+  // tag
+  const tag = document.createElement("div");
+  tag.innerText = act.category;
+  tag.style.marginTop = "6px";
+  tag.style.display = "inline-block";
+  tag.style.padding = "4px 10px";
+  tag.style.borderRadius = "999px";
+  tag.style.background = "#eee";
 
-      const cat=document.createElement("span");
-      cat.innerText=act.category;
-      cat.style.background="#eee";
-      cat.style.padding="3px 8px";
-      cat.style.borderRadius="999px";
-      tags.appendChild(cat);
+  info.appendChild(name);
+  info.appendChild(price);
+  info.appendChild(tag);
 
-      parseNoteTags(act.note).forEach(t=>{
-        const tag=document.createElement("span");
-        tag.innerText=t;
-        tag.style.marginLeft="5px";
-        tags.appendChild(tag);
-      });
+  if (act.done) {
+    info.style.opacity = "0.5";
+    name.style.textDecoration = "line-through";
+  }
 
-      left.appendChild(name);
-      left.appendChild(price);
-      left.appendChild(tags);
+  left.appendChild(cb);
+  left.appendChild(info);
 
-      const mapBtn=document.createElement("button");
-      mapBtn.innerText="📍";
-      mapBtn.onclick=e=>{
-        e.stopPropagation();
-        window.open(act.map);
-      };
+  // =================
+  // 📍 地圖（固定右側）
+  // =================
+  const mapBtn = document.createElement("button");
+  mapBtn.innerText = "📍";
+  mapBtn.style.border = "none";
+  mapBtn.style.background = "#f1f5f9";
+  mapBtn.style.borderRadius = "14px";
+  mapBtn.style.padding = "10px 12px";
+  mapBtn.style.fontSize = "18px";
+  mapBtn.style.flexShrink = "0"; // ⭐關鍵
 
-      top.appendChild(left);
-      top.appendChild(mapBtn);
+  mapBtn.onclick = (e) => {
+    e.stopPropagation();
+    if (act.map) window.open(act.map);
+  };
 
-      row.appendChild(top);
-      card.appendChild(row);
-    });
+  top.appendChild(left);
+  top.appendChild(mapBtn);
+
+  row.appendChild(top);
+  card.appendChild(row);
+});
 
     page.appendChild(card);
     track.appendChild(page);
