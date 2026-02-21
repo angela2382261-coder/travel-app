@@ -127,6 +127,8 @@ function renderPlan(container){
    day.activities.forEach((act) => {
 
   const row = document.createElement("div");
+     row.addEventListener("touchstart", (e) => {
+  e.stopPropagation();   // ⭐很重要
 // ⭐⭐⭐ 放這裡 ⭐⭐⭐
 let pressTimer = null;
 let startX = 0;
@@ -234,22 +236,65 @@ row.addEventListener("touchcancel", () => {
   tag.style.padding = "4px 10px";
   tag.style.borderRadius = "999px";
   tag.style.background = "#eee";
+
+   // ⭐ tag container（你缺這段）
+const tagWrap = document.createElement("div");
+tagWrap.style.display = "flex";
+tagWrap.style.flexWrap = "wrap";
+tagWrap.style.gap = "6px";
+tagWrap.style.marginTop = "6px";
+
+// 分類 tag
+tagWrap.appendChild(tag);
+
+// 交通 tag
+parseNoteTags(act.note).forEach(t => {
+  const tEl = document.createElement("span");
+  tEl.innerText = t;
+  tEl.style.fontSize = "12px";
+  tEl.style.padding = "4px 8px";
+  tEl.style.borderRadius = "999px";
+  tEl.style.background = "#f1f5f9";
+  tagWrap.appendChild(tEl);
+});  
      
 // ⭐ 原始備註（顯示完整內容）
+// ⭐ 正確順序
+info.appendChild(name);
+info.appendChild(price);
+
+// 原始備註
 if (act.note) {
   const noteText = document.createElement("div");
   noteText.innerText = act.note;
-
   noteText.style.marginTop = "6px";
   noteText.style.fontSize = "13px";
   noteText.style.color = "#6b7280";
-  noteText.style.lineHeight = "1.4";
-
   info.appendChild(noteText);
 }
 
+// tag container（分類+交通）
+const tagWrap = document.createElement("div");
+tagWrap.style.display = "flex";
+tagWrap.style.flexWrap = "wrap";
+tagWrap.style.gap = "6px";
+tagWrap.style.marginTop = "6px";
+
+// 分類
+tagWrap.appendChild(tag);
+
+// 交通
+parseNoteTags(act.note).forEach(t => {
+  const tEl = document.createElement("span");
+  tEl.innerText = t;
+  tEl.style.fontSize = "12px";
+  tEl.style.padding = "4px 8px";
+  tEl.style.borderRadius = "999px";
+  tEl.style.background = "#eef2ff";
+  tagWrap.appendChild(tEl);
+});
+
 info.appendChild(tagWrap);
-  
   if (act.done) {
     info.style.opacity = "0.5";
     name.style.textDecoration = "line-through";
