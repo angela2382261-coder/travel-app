@@ -251,7 +251,10 @@ function renderPlan(container){
   });
 
   container.appendChild(slider);
-
+  // ⭐⭐⭐ 修正滑動位置 ⭐⭐⭐
+requestAnimationFrame(() => {
+  track.style.transform = `translateX(-${currentDayIndex * width}px)`;
+});
   // 滑動
   let start=0;
   slider.ontouchstart=e=>start=e.touches[0].clientX;
@@ -262,6 +265,7 @@ function renderPlan(container){
     currentDayIndex=Math.max(0,Math.min(currentDayIndex,project.days.length-1));
     track.style.transform=`translateX(-${currentDayIndex*width}px)`;
   };
+
 }
 
 // =================
