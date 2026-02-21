@@ -2,12 +2,16 @@ const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L4
 
 let appData = null;
 
-// ✅ Loading
+// =================
+// ⏳ Loading
+// =================
 function renderLoading() {
   document.getElementById("app").innerHTML = "⏳ 讀取中...";
 }
 
-// ✅ JSONP
+// =================
+// 🔹 JSONP（解決 CORS）
+// =================
 function loadFromSheet() {
   return new Promise((resolve) => {
     const script = document.createElement("script");
@@ -24,7 +28,9 @@ function loadFromSheet() {
   });
 }
 
-// ✅ 初始化
+// =================
+// 🚀 初始化
+// =================
 async function init() {
   renderLoading();
   const sheetData = await loadFromSheet();
@@ -34,7 +40,9 @@ async function init() {
 
 init();
 
-// ✅ 轉換資料
+// =================
+// 🔄 資料轉換（完整版）
+// =================
 function convertSheetToAppData(data) {
   const { projects, days, activities, meta } = data;
 
@@ -50,6 +58,7 @@ function convertSheetToAppData(data) {
       budget: { total: 0 }
     };
 
+    // 📅 天數
     project.days = days
       .filter(d => d.projectId === p.projectId)
       .map(d => ({
@@ -61,10 +70,13 @@ function convertSheetToAppData(data) {
             id: a.activityId,
             name: a.name,
             cost: Number(a.cost) || 0,
-            done: a.done === true || a.done === "TRUE"
+            done: a.done === true || a.done === "TRUE",
+            map: a.map || "",
+            category: a.category || "其他"
           }))
       }));
 
+    // 💰 預算
     const m = meta.find(m => m.projectId === p.projectId);
     if (m) {
       project.budget.total = Number(m.budgetTotal) || 0;
@@ -76,87 +88,80 @@ function convertSheetToAppData(data) {
   return result;
 }
 
-// ✅ UI渲染
+// =================
+// 🎨 畫面
+// =================
 function render() {
   const container = document.getElementById("app");
   container.innerHTML = "";
-  container.style.fontFamily = "-apple-system, sans-serif";
   container.style.padding = "15px";
-  container.style.background = "#f5f5f7";
+  container.style.fontFamily = "-apple-system";
 
   const project = appData.projects[0];
 
-  // 💰 計算花費
+  // =================
+  // 💰 總花費
+  // =================
   let total = 0;
+  let stats = {};
+
   project.days.forEach(day => {
     day.activities.forEach(a => {
-      if (a.done) total += a.cost;
+      if (a.done) {
+        total += a.cost;
+
+        if (!stats[a.category]) stats[a.category] = 0;
+        stats[a.category] += a.cost;
+      }
     });
   });
 
-  // 💰 預算卡
-  const budgetCard = document.createElement("div");
-  budgetCard.style.background = "#fff";
-  budgetCard.style.padding = "15px";
-  budgetCard.style.borderRadius = "16px";
-  budgetCard.style.marginBottom = "15px";
-  budgetCard.style.boxShadow = "0 4px 10px rgba(0,0,0,0.05)";
+  const budget = document.createElement("div");
+  budget.style.background = "#fff";
+  budget.style.padding = "12px";
+  budget.style.borderRadius = "12px";
+  budget.style.marginBottom = "15px";
+  budget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.05)";
 
-  const percent = project.budget.total
-    ? Math.min(100, (total / project.budget.total) * 100)
-    : 0;
+  budget.innerHTML = `💰 總花費：¥${total} / ¥${project.budget.total}<br>`;
 
-  budgetCard.innerHTML = `
-    <div style="font-weight:bold;margin-bottom:5px;">💰 預算</div>
-    <div>¥${total} / ¥${project.budget.total}</div>
-    <div style="height:8px;background:#eee;border-radius:10px;margin-top:8px;">
-      <div style="
-        width:${percent}%;
-        height:100%;
-        background:#007aff;
-        border-radius:10px;
-      "></div>
-    </div>
-  `;
+  for (let k in stats) {
+    budget.innerHTML += `📊 ${k}：¥${stats[k]}<br>`;
+  }
 
-  container.appendChild(budgetCard);
+  container.appendChild(budget);
 
-  // 📌 標題
-  const title = document.createElement("h2");
-  title.innerText = project.name;
-  title.style.marginBottom = "15px";
-  container.appendChild(title);
-
-  const today = new Date().toISOString().slice(0, 10);
-
-  // 📅 每一天
+  // =================
+  // 🗓 行程
+  // =================
   project.days.forEach(day => {
-    const isToday = day.date.includes(today);
-
     const card = document.createElement("div");
-    card.style.background = isToday ? "#e8f0ff" : "#fff";
+
+    card.style.background = "#fff";
     card.style.borderRadius = "16px";
     card.style.padding = "15px";
     card.style.marginBottom = "15px";
-    card.style.boxShadow = "0 4px 12px rgba(0,0,0,0.06)";
+    card.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
 
     const doneCount = day.activities.filter(a => a.done).length;
 
-    const h3 = document.createElement("h3");
-    h3.innerText = `${day.date.slice(0,10)}｜${day.title} (${doneCount}/${day.activities.length})`;
-    h3.style.marginBottom = "10px";
-    card.appendChild(h3);
+    const title = document.createElement("h3");
+    title.innerText = `${day.title} (${doneCount}/${day.activities.length})`;
+    card.appendChild(title);
 
     day.activities.forEach(act => {
       const row = document.createElement("div");
       row.style.display = "flex";
-      row.style.alignItems = "center";
-      row.style.marginBottom = "6px";
+      row.style.justifyContent = "space-between";
+      row.style.marginBottom = "8px";
+
+      const left = document.createElement("div");
 
       const cb = document.createElement("input");
       cb.type = "checkbox";
       cb.checked = act.done;
 
+      // ⭐ 即時 UI 更新
       cb.onchange = async () => {
         act.done = cb.checked;
         render();
@@ -171,8 +176,22 @@ function render() {
         text.style.color = "#999";
       }
 
-      row.appendChild(cb);
-      row.appendChild(text);
+      left.appendChild(cb);
+      left.appendChild(text);
+
+      // 🗺 地圖按鈕
+      const mapBtn = document.createElement("button");
+      mapBtn.innerText = "📍";
+      mapBtn.style.border = "none";
+      mapBtn.style.background = "#eee";
+      mapBtn.style.borderRadius = "8px";
+      mapBtn.onclick = () => {
+        if (act.map) window.open(act.map, "_blank");
+      };
+
+      row.appendChild(left);
+      row.appendChild(mapBtn);
+
       card.appendChild(row);
     });
 
@@ -180,7 +199,9 @@ function render() {
   });
 }
 
-// ✅ 更新
+// =================
+// 🔄 更新 Sheet
+// =================
 async function updateActivity(activityId, done) {
   try {
     await fetch(API_URL, {
