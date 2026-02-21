@@ -168,105 +168,141 @@ function renderPlan(container) {
     card.appendChild(title);
 
     day.activities.forEach((act) => {
-      const row = document.createElement("div");
-      row.style.display = "flex";
-      row.style.justifyContent = "space-between";
-      row.style.alignItems = "flex-start";
-      row.style.padding = "14px 0";
-      row.style.borderTop = "1px solid #eee";
-      row.style.gap = "10px";
 
-      // left
-      const left = document.createElement("div");
-      left.style.display = "flex";
-      left.style.alignItems = "flex-start";
-      left.style.gap = "12px";
-      left.style.flex = "1";
+  const row = document.createElement("div");
+  row.style.display = "flex";
+  row.style.justifyContent = "space-between";
+  row.style.alignItems = "center";
+  row.style.padding = "16px 0";
+  row.style.borderTop = "1px solid #f1f1f1";
 
-      // checkbox
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = act.done;
-      cb.style.transform = "scale(1.35)";
-      cb.style.marginTop = "6px";
+  // =================
+  // 左側
+  // =================
+  const left = document.createElement("div");
+  left.style.display = "flex";
+  left.style.alignItems = "flex-start";
+  left.style.gap = "12px";
+  left.style.flex = "1";
 
-      cb.onchange = async () => {
-        act.done = cb.checked;
-        render();
-        await updateActivity(act.id, cb.checked);
-      };
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = act.done;
+  cb.style.transform = "scale(1.4)";
+  cb.style.marginTop = "6px";
 
-      // info
-      const info = document.createElement("div");
-      info.style.flex = "1";
+  cb.onchange = async () => {
+    act.done = cb.checked;
+    render();
+    await updateActivity(act.id, cb.checked);
+  };
 
-      // main line
-      const main = document.createElement("div");
-      main.innerText = `${act.name} ¥${act.cost}`;
-      main.style.fontSize = "20px";
-      main.style.fontWeight = "600";
-      main.style.lineHeight = "1.25";
-      main.style.wordBreak = "break-word";
+  // =================
+  // 文字區
+  // =================
+  const info = document.createElement("div");
+  info.style.flex = "1";
 
-      if (act.done) {
-        main.style.textDecoration = "line-through";
-        main.style.color = "#9ca3af";
-      }
+  // ⭐ 名稱
+  const name = document.createElement("div");
+  name.innerText = act.name;
+  name.style.fontSize = "20px";
+  name.style.fontWeight = "600";
 
-      // tagWrap
-      const tagWrap = document.createElement("div");
-      tagWrap.style.marginTop = "8px";
-      tagWrap.style.display = "flex";
-      tagWrap.style.flexWrap = "wrap";
-      tagWrap.style.gap = "6px";
+  // ⭐ 金額（重點🔥）
+  const price = document.createElement("div");
+  price.innerText = `¥${act.cost.toLocaleString()}`;
+  price.style.fontSize = "16px";
+  price.style.fontWeight = "700";
+  price.style.color = "#2563eb"; // 藍色醒目
 
-      // ✅ 分類 tag
-      const catTag = document.createElement("span");
-      catTag.innerText = act.category;
-      catTag.style.fontSize = "12px";
-      catTag.style.padding = "4px 10px";
-      catTag.style.borderRadius = "999px";
-      catTag.style.background = getCategoryBg(act.category);
-      catTag.style.color = getCategoryColor(act.category);
-      tagWrap.appendChild(catTag);
+  // =================
+  // 🏷 Tag 區
+  // =================
+  const tagWrap = document.createElement("div");
+  tagWrap.style.marginTop = "8px";
+  tagWrap.style.display = "flex";
+  tagWrap.style.flexWrap = "wrap";
+  tagWrap.style.gap = "6px";
 
-      // ✅ 交通備註 tag
-      parseNoteTags(act.note).forEach((t) => {
-        const tag = document.createElement("span");
-        tag.innerText = t;
-        tag.style.fontSize = "12px";
-        tag.style.padding = "4px 10px";
-        tag.style.borderRadius = "999px";
-        tag.style.background = "#f1f5f9";
-        tag.style.color = "#334155";
-        tagWrap.appendChild(tag);
-      });
+  // 分類 tag（彩色🔥）
+  const catTag = document.createElement("span");
+  catTag.innerText = act.category;
 
-      info.appendChild(main);
-      info.appendChild(tagWrap);
+  catTag.style.fontSize = "12px";
+  catTag.style.padding = "5px 10px";
+  catTag.style.borderRadius = "999px";
 
-      left.appendChild(cb);
-      left.appendChild(info);
+  if (act.category === "食物") {
+    catTag.style.background = "#fee2e2";
+    catTag.style.color = "#b91c1c";
+  } else if (act.category === "景點") {
+    catTag.style.background = "#dbeafe";
+    catTag.style.color = "#1d4ed8";
+  } else if (act.category === "交通") {
+    catTag.style.background = "#fef3c7";
+    catTag.style.color = "#92400e";
+  } else if (act.category === "飯店") {
+    catTag.style.background = "#dcfce7";
+    catTag.style.color = "#166534";
+  } else {
+    catTag.style.background = "#f1f5f9";
+    catTag.style.color = "#334155";
+  }
 
-      // map button
-      const mapBtn = document.createElement("button");
-      mapBtn.innerText = "📍";
-      mapBtn.style.border = "none";
-      mapBtn.style.background = "#f1f1f3";
-      mapBtn.style.borderRadius = "14px";
-      mapBtn.style.padding = "10px 12px";
-      mapBtn.style.fontSize = "18px";
-      mapBtn.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)";
-      mapBtn.style.flexShrink = "0";
+  tagWrap.appendChild(catTag);
 
-      mapBtn.onclick = () => {
-        if (act.map) window.open(act.map, "_blank");
-      };
+  // ⭐ 備註 tag（交通方式）
+  parseNoteTags(act.note).forEach(t => {
+    const tag = document.createElement("span");
+    tag.innerText = t;
 
-      row.appendChild(left);
-      row.appendChild(mapBtn);
-      card.appendChild(row);
-    });
+    tag.style.fontSize = "12px";
+    tag.style.padding = "5px 10px";
+    tag.style.borderRadius = "999px";
+    tag.style.background = "#eef2ff";
+    tag.style.color = "#3730a3";
+
+    tagWrap.appendChild(tag);
+  });
+
+  // =================
+  // 組合
+  // =================
+  info.appendChild(name);
+  info.appendChild(price);
+  info.appendChild(tagWrap);
+
+  if (act.done) {
+    info.style.opacity = "0.5";
+    name.style.textDecoration = "line-through";
+  }
+
+  left.appendChild(cb);
+  left.appendChild(info);
+
+  // =================
+  // 📍 地圖
+  // =================
+  const mapBtn = document.createElement("button");
+  mapBtn.innerText = "📍";
+
+  mapBtn.style.border = "none";
+  mapBtn.style.background = "#f1f5f9";
+  mapBtn.style.borderRadius = "14px";
+  mapBtn.style.padding = "10px 12px";
+  mapBtn.style.fontSize = "18px";
+  mapBtn.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)";
+
+  mapBtn.onclick = () => {
+    if (act.map) window.open(act.map, "_blank");
+  };
+
+  row.appendChild(left);
+  row.appendChild(mapBtn);
+
+  card.appendChild(row);
+});
 
     page.appendChild(card);
     track.appendChild(page);
