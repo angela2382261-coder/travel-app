@@ -3,8 +3,6 @@ const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L4
 let appData = null;
 let currentTab = "plan";
 let currentDayIndex = 0;
-let expanded = {};
-let editingAct = null;
 
 // =================
 // 🚀 初始化
@@ -101,7 +99,6 @@ function renderPlan(container){
 
   const slider = document.createElement("div");
   slider.style.overflow="hidden";
-  slider.style.touchAction = "pan-y";
 
   const track = document.createElement("div");
   track.style.display="flex";
@@ -124,208 +121,130 @@ function renderPlan(container){
     title.innerText=day.title;
     card.appendChild(title);
 
-   day.activities.forEach((act) => {
+    day.activities.forEach((act) => {
 
-  const row = document.createElement("div");
-     row.addEventListener("touchstart", (e) => {
-  e.stopPropagation();   // ⭐很重要
-// ⭐⭐⭐ 放這裡 ⭐⭐⭐
-let pressTimer = null;
-let startX = 0;
-let startY = 0;
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.flexDirection = "column";
+      row.style.padding = "14px 0";
+      row.style.borderTop = "1px solid #eee";
 
-row.addEventListener("touchstart", (e) => {
-  const t = e.touches[0];
+      // =================
+      // 長按
+      // =================
+      let pressTimer;
+      let startX=0,startY=0;
 
-  startX = t.clientX;
-  startY = t.clientY;
+      row.addEventListener("touchstart",(e)=>{
+        const t=e.touches[0];
+        startX=t.clientX;
+        startY=t.clientY;
 
-  pressTimer = setTimeout(() => {
-    openEditor(act); // 👉 長按觸發
-  }, 500);
+        pressTimer=setTimeout(()=>{
+          openEditor(act);
+        },500);
+      });
 
-}, { passive: false });
+      row.addEventListener("touchmove",(e)=>{
+        const t=e.touches[0];
+        if(Math.abs(t.clientX-startX)>10 || Math.abs(t.clientY-startY)>10){
+          clearTimeout(pressTimer);
+        }
+      });
 
-row.addEventListener("touchmove", (e) => {
-  const t = e.touches[0];
+      row.addEventListener("touchend",()=>clearTimeout(pressTimer));
 
-  const dx = Math.abs(t.clientX - startX);
-  const dy = Math.abs(t.clientY - startY);
+      // =================
+      // 上排
+      // =================
+      const top = document.createElement("div");
+      top.style.display = "flex";
+      top.style.alignItems = "flex-start";
+      top.style.gap = "12px";
 
-  if (dx > 10 || dy > 10) {
-    clearTimeout(pressTimer); // 👉 滑動就取消
-  }
+      const left = document.createElement("div");
+      left.style.display = "flex";
+      left.style.gap = "12px";
+      left.style.flex = "1";
 
-}, { passive: true });
+      // checkbox
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = act.done;
 
-row.addEventListener("touchend", () => {
-  clearTimeout(pressTimer);
-}, { passive: true });
+      cb.onchange = async () => {
+        act.done = cb.checked;
+        render();
+        await updateActivity(act.id, cb.checked);
+      };
 
-row.addEventListener("touchcancel", () => {
-  clearTimeout(pressTimer);
-}, { passive: true });
+      // info
+      const info = document.createElement("div");
 
-     
-  row.style.display = "flex";
-  row.style.flexDirection = "column";
-  row.style.padding = "14px 0";
-  row.style.borderTop = "1px solid #eee";
+      const name = document.createElement("div");
+      name.innerText = act.name;
+      name.style.fontWeight = "700";
 
-  // =================
-  // ⭐ 上排（主內容）
-  // =================
-  const top = document.createElement("div");
-  top.style.display = "flex";
-  top.style.alignItems = "flex-start";
-  top.style.gap = "12px";
+      const price = document.createElement("div");
+      price.innerText = `¥${act.cost}`;
+      price.style.background="#e0f2fe";
+      price.style.display="inline-block";
+      price.style.padding="4px 10px";
+      price.style.borderRadius="999px";
+      price.style.marginTop="6px";
 
-  // =================
-  // 左側（checkbox + 內容）
-  // =================
-  const left = document.createElement("div");
-  left.style.display = "flex";
-  left.style.alignItems = "flex-start";
-  left.style.gap = "12px";
-  left.style.flex = "1";
-  left.style.minWidth = "0"; // ⭐關鍵
+      info.appendChild(name);
+      info.appendChild(price);
 
-  // ✅ checkbox（你少這個）
-  const cb = document.createElement("input");
-  cb.type = "checkbox";
-  cb.checked = act.done;
-  cb.style.transform = "scale(1.3)";
-  cb.style.marginTop = "6px";
+      // note
+      if(act.note){
+        const note=document.createElement("div");
+        note.innerText=act.note;
+        note.style.fontSize="13px";
+        note.style.color="#666";
+        info.appendChild(note);
+      }
 
-  cb.onchange = async () => {
-    act.done = cb.checked;
-    render();
-    await updateActivity(act.id, cb.checked);
-  };
+      // tag
+      const tagWrap=document.createElement("div");
+      tagWrap.style.marginTop="6px";
 
-  // =================
-  // 文字區
-  // =================
-  const info = document.createElement("div");
-  info.style.flex = "1";
-  info.style.minWidth = "0";
+      const cat=document.createElement("span");
+      cat.innerText=act.category;
+      cat.style.background="#eee";
+      cat.style.padding="4px 8px";
+      cat.style.borderRadius="999px";
+      tagWrap.appendChild(cat);
 
-  // 名稱
-  const name = document.createElement("div");
-  name.innerText = act.name;
-  name.style.fontSize = "20px";
-  name.style.fontWeight = "700";
-  name.style.wordBreak = "break-word";
+      parseNoteTags(act.note).forEach(t=>{
+        const tag=document.createElement("span");
+        tag.innerText=t;
+        tag.style.marginLeft="6px";
+        tag.style.background="#eef2ff";
+        tag.style.padding="4px 8px";
+        tag.style.borderRadius="999px";
+        tagWrap.appendChild(tag);
+      });
 
-  // 金額（膠囊）
-  const price = document.createElement("div");
-  price.innerText = `¥${act.cost}`;
-  price.style.display = "inline-block";
-  price.style.marginTop = "6px";
-  price.style.padding = "6px 12px";
-  price.style.borderRadius = "999px";
-  price.style.background = "#e0f2fe";
-  price.style.color = "#075985";
-  price.style.fontWeight = "700";
+      info.appendChild(tagWrap);
 
-  // tag
-  const tag = document.createElement("div");
-  tag.innerText = act.category;
-  tag.style.marginTop = "6px";
-  tag.style.display = "inline-block";
-  tag.style.padding = "4px 10px";
-  tag.style.borderRadius = "999px";
-  tag.style.background = "#eee";
+      left.appendChild(cb);
+      left.appendChild(info);
 
-   // ⭐ tag container（你缺這段）
-const tagWrap = document.createElement("div");
-tagWrap.style.display = "flex";
-tagWrap.style.flexWrap = "wrap";
-tagWrap.style.gap = "6px";
-tagWrap.style.marginTop = "6px";
+      // 地圖
+      const mapBtn=document.createElement("button");
+      mapBtn.innerText="📍";
+      mapBtn.onclick=(e)=>{
+        e.stopPropagation();
+        if(act.map) window.open(act.map);
+      };
 
-// 分類 tag
-tagWrap.appendChild(tag);
+      top.appendChild(left);
+      top.appendChild(mapBtn);
 
-// 交通 tag
-parseNoteTags(act.note).forEach(t => {
-  const tEl = document.createElement("span");
-  tEl.innerText = t;
-  tEl.style.fontSize = "12px";
-  tEl.style.padding = "4px 8px";
-  tEl.style.borderRadius = "999px";
-  tEl.style.background = "#f1f5f9";
-  tagWrap.appendChild(tEl);
-});  
-     
-// ⭐ 原始備註（顯示完整內容）
-// ⭐ 正確順序
-info.appendChild(name);
-info.appendChild(price);
-
-// 原始備註
-if (act.note) {
-  const noteText = document.createElement("div");
-  noteText.innerText = act.note;
-  noteText.style.marginTop = "6px";
-  noteText.style.fontSize = "13px";
-  noteText.style.color = "#6b7280";
-  info.appendChild(noteText);
-}
-
-// tag container（分類+交通）
-const tagWrap = document.createElement("div");
-tagWrap.style.display = "flex";
-tagWrap.style.flexWrap = "wrap";
-tagWrap.style.gap = "6px";
-tagWrap.style.marginTop = "6px";
-
-// 分類
-tagWrap.appendChild(tag);
-
-// 交通
-parseNoteTags(act.note).forEach(t => {
-  const tEl = document.createElement("span");
-  tEl.innerText = t;
-  tEl.style.fontSize = "12px";
-  tEl.style.padding = "4px 8px";
-  tEl.style.borderRadius = "999px";
-  tEl.style.background = "#eef2ff";
-  tagWrap.appendChild(tEl);
-});
-
-info.appendChild(tagWrap);
-  if (act.done) {
-    info.style.opacity = "0.5";
-    name.style.textDecoration = "line-through";
-  }
-
-  left.appendChild(cb);
-  left.appendChild(info);
-
-  // =================
-  // 📍 地圖（固定右側）
-  // =================
-  const mapBtn = document.createElement("button");
-  mapBtn.innerText = "📍";
-  mapBtn.style.border = "none";
-  mapBtn.style.background = "#f1f5f9";
-  mapBtn.style.borderRadius = "14px";
-  mapBtn.style.padding = "10px 12px";
-  mapBtn.style.fontSize = "18px";
-  mapBtn.style.flexShrink = "0"; // ⭐關鍵
-
-  mapBtn.onclick = (e) => {
-    e.stopPropagation();
-    if (act.map) window.open(act.map);
-  };
-
-  top.appendChild(left);
-  top.appendChild(mapBtn);
-
-  row.appendChild(top);
-  card.appendChild(row);
-});
+      row.appendChild(top);
+      card.appendChild(row);
+    });
 
     page.appendChild(card);
     track.appendChild(page);
@@ -336,7 +255,6 @@ info.appendChild(tagWrap);
   // 滑動
   let start=0;
   slider.ontouchstart=e=>start=e.touches[0].clientX;
-
   slider.ontouchend=e=>{
     let diff=start-e.changedTouches[0].clientX;
     if(diff>50) currentDayIndex++;
@@ -344,23 +262,10 @@ info.appendChild(tagWrap);
     currentDayIndex=Math.max(0,Math.min(currentDayIndex,project.days.length-1));
     track.style.transform=`translateX(-${currentDayIndex*width}px)`;
   };
-
-  // dots
-  const dots=document.createElement("div");
-  dots.style.textAlign="center";
-  project.days.forEach((_,i)=>{
-    const d=document.createElement("span");
-    d.innerText="●";
-    d.style.margin="3px";
-    d.style.opacity=i===currentDayIndex?1:0.3;
-    dots.appendChild(d);
-  });
-
-  container.appendChild(dots);
 }
 
 // =================
-// 統計頁
+// 統計
 // =================
 function renderStats(container){
   const p=appData.projects[0];
@@ -395,7 +300,7 @@ function renderStats(container){
 }
 
 // =================
-// TabBar（關鍵🔥）
+// tabbar
 // =================
 function renderTabBar(){
   const old=document.querySelector(".tabbar");
@@ -408,15 +313,14 @@ function renderTabBar(){
   bar.style.width="100%";
   bar.style.display="flex";
   bar.style.background="#fff";
-  bar.style.borderTop="1px solid #eee";
 
-  const mk=(key,label)=>{
-    const t=document.createElement("div");
-    t.style.flex=1;
-    t.style.textAlign="center";
-    t.innerText=label;
-    t.onclick=()=>{currentTab=key;render();};
-    return t;
+  const mk=(k,t)=>{
+    const d=document.createElement("div");
+    d.style.flex=1;
+    d.style.textAlign="center";
+    d.innerText=t;
+    d.onclick=()=>{currentTab=k;render();};
+    return d;
   };
 
   bar.appendChild(mk("plan","行程"));
@@ -426,8 +330,18 @@ function renderTabBar(){
 }
 
 // =================
-// 編輯視窗
+// 更新
+// =================
+async function updateActivity(id,done){
+  await fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({type:"updateActivity",activityId:id,done})
+  });
+}
+
+// =================
+// 編輯
 // =================
 function openEditor(act){
-  alert("之後這裡會升級成完整編輯UI");
+  alert("長按成功！之後升級編輯UI");
 }
