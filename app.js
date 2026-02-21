@@ -67,13 +67,14 @@ function convert(data) {
         activities: activities
           .filter(a => a.dayId === d.dayId)
           .map(a => ({
-            id: a.activityId,
-            name: a.name,
-            cost: Number(a.cost) || 0,
-            done: a.done === true || a.done === "TRUE",
-            category: a.category || "其他",
-            map: a.map || ""
-          }))
+  id: a.activityId,
+  name: a.name,
+  cost: Number(a.cost) || 0,
+  done: a.done === true || a.done === "TRUE",
+  category: a.category || "其他",
+  map: a.map || "",
+  note: a.note || ""   // ⭐新增這行
+}))
       }));
 
     const m = meta.find(m => m.projectId === p.projectId);
@@ -85,6 +86,20 @@ function convert(data) {
   });
 
   return result;
+}
+
+function parseTags(note) {
+  if (!note) return [];
+
+  const tags = [];
+
+  if (note.includes("JR")) tags.push("🚆 JR");
+  if (note.includes("巴士")) tags.push("🚌 巴士");
+  if (note.includes("地鐵")) tags.push("🚇 地鐵");
+  if (note.includes("步行")) tags.push("🚶 步行");
+  if (note.includes("高速")) tags.push("🚌 高速巴士");
+
+  return tags;
 }
 
 // =================
@@ -173,9 +188,48 @@ function renderPlan(container) {
         await updateActivity(act.id, cb.checked);
       };
 
-      const text = document.createElement("span");
-      text.innerText = `${act.name} ¥${act.cost}`;
-      text.style.fontSize = "20px";
+ const wrap = document.createElement("div");
+
+const main = document.createElement("div");
+main.innerText = `${act.name} ¥${act.cost}`;
+main.style.fontSize = "20px";
+main.style.fontWeight = "500";
+
+wrap.appendChild(main);
+
+// ⭐ Tag 區
+const tags = parseTags(act.note);
+
+if (tags.length > 0) {
+  const tagWrap = document.createElement("div");
+  tagWrap.style.marginTop = "6px";
+  tagWrap.style.display = "flex";
+  tagWrap.style.flexWrap = "wrap";
+  tagWrap.style.gap = "6px";
+
+  tags.forEach(t => {
+    const tag = document.createElement("span");
+    tag.innerText = t;
+
+    tag.style.fontSize = "12px";
+    tag.style.padding = "4px 8px";
+    tag.style.borderRadius = "999px";
+    tag.style.background = "#f1f5f9";
+    tag.style.color = "#333";
+
+    tagWrap.appendChild(tag);
+  });
+
+  wrap.appendChild(tagWrap);
+}
+
+if (act.done) {
+  wrap.style.textDecoration = "line-through";
+  wrap.style.color = "#999";
+}
+
+left.appendChild(cb);
+left.appendChild(wrap);
 
       if (act.done) {
         text.style.textDecoration = "line-through";
