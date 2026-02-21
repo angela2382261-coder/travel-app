@@ -10,7 +10,7 @@ function renderLoading() {
 }
 
 // =================
-// 🔹 JSONP（解決 CORS）
+// 🔹 JSONP
 // =================
 function loadFromSheet() {
   return new Promise((resolve) => {
@@ -41,14 +41,12 @@ async function init() {
 init();
 
 // =================
-// 🔄 資料轉換（完整版）
+// 🔄 資料轉換（🔥升級）
 // =================
 function convertSheetToAppData(data) {
   const { projects, days, activities, meta } = data;
 
-  const result = {
-    projects: []
-  };
+  const result = { projects: [] };
 
   projects.forEach(p => {
     const project = {
@@ -58,7 +56,6 @@ function convertSheetToAppData(data) {
       budget: { total: 0 }
     };
 
-    // 📅 天數
     project.days = days
       .filter(d => d.projectId === p.projectId)
       .map(d => ({
@@ -67,15 +64,15 @@ function convertSheetToAppData(data) {
         activities: activities
           .filter(a => a.dayId === d.dayId)
           .map(a => ({
-  id: a.activityId,
-  name: a.name,
-  cost: Number(a.cost) || 0,
-  done: a.done === true || a.done === "TRUE",
-  category: a.category || "其他"   // ⭐加這行
-}))
+            id: a.activityId,
+            name: a.name,
+            cost: Number(a.cost) || 0,
+            done: a.done === true || a.done === "TRUE",
+            category: a.category || "其他",
+            map: a.map || ""   // ⭐ 修正：地圖
+          }))
       }));
 
-    // 💰 預算
     const m = meta.find(m => m.projectId === p.projectId);
     if (m) {
       project.budget.total = Number(m.budgetTotal) || 0;
@@ -88,18 +85,19 @@ function convertSheetToAppData(data) {
 }
 
 // =================
-// 🎨 畫面
+// 🎨 UI
 // =================
 function render() {
   const container = document.getElementById("app");
   container.innerHTML = "";
   container.style.padding = "15px";
   container.style.fontFamily = "-apple-system";
+  container.style.background = "#f5f5f5";
 
   const project = appData.projects[0];
 
   // =================
-  // 💰 總花費
+  // 💰 花費
   // =================
   let total = 0;
   let stats = {};
@@ -108,7 +106,6 @@ function render() {
     day.activities.forEach(a => {
       if (a.done) {
         total += a.cost;
-
         if (!stats[a.category]) stats[a.category] = 0;
         stats[a.category] += a.cost;
       }
@@ -123,7 +120,6 @@ function render() {
   budget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.05)";
 
   budget.innerHTML = `💰 總花費：¥${total} / ¥${project.budget.total}<br>`;
-
   for (let k in stats) {
     budget.innerHTML += `📊 ${k}：¥${stats[k]}<br>`;
   }
@@ -152,7 +148,8 @@ function render() {
       const row = document.createElement("div");
       row.style.display = "flex";
       row.style.justifyContent = "space-between";
-      row.style.marginBottom = "8px";
+      row.style.alignItems = "center";
+      row.style.marginBottom = "10px";
 
       const left = document.createElement("div");
 
@@ -160,12 +157,28 @@ function render() {
       cb.type = "checkbox";
       cb.checked = act.done;
 
-      // ⭐ 即時 UI 更新
       cb.onchange = async () => {
         act.done = cb.checked;
         render();
         await updateActivity(act.id, cb.checked);
       };
+
+      // 🎨 分類標籤
+      const tag = document.createElement("span");
+      const colors = {
+        "食物": "#ffe4e6",
+        "景點": "#e0f2fe",
+        "交通": "#fef9c3",
+        "飯店": "#dcfce7",
+        "其他": "#eee"
+      };
+
+      tag.innerText = act.category;
+      tag.style.background = colors[act.category] || "#eee";
+      tag.style.padding = "2px 8px";
+      tag.style.borderRadius = "8px";
+      tag.style.marginRight = "6px";
+      tag.style.fontSize = "12px";
 
       const text = document.createElement("span");
       text.innerText = ` ${act.name} ¥${act.cost}`;
@@ -176,14 +189,17 @@ function render() {
       }
 
       left.appendChild(cb);
+      left.appendChild(tag);
       left.appendChild(text);
 
-      // 🗺 地圖按鈕
+      // 📍 地圖
       const mapBtn = document.createElement("button");
       mapBtn.innerText = "📍";
       mapBtn.style.border = "none";
       mapBtn.style.background = "#eee";
       mapBtn.style.borderRadius = "8px";
+      mapBtn.style.padding = "6px";
+
       mapBtn.onclick = () => {
         if (act.map) window.open(act.map, "_blank");
       };
@@ -199,7 +215,7 @@ function render() {
 }
 
 // =================
-// 🔄 更新 Sheet
+// 🔄 更新
 // =================
 async function updateActivity(activityId, done) {
   try {
