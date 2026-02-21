@@ -87,20 +87,22 @@ function convert(data) {
 
   return result;
 }
-
-function parseTags(note) {
+function parseNoteTags(note) {
   if (!note) return [];
+  const t = [];
+  const s = String(note);
 
-  const tags = [];
+  if (s.includes("JR")) t.push("🚆 JR");
+  if (s.includes("地鐵")) t.push("🚇 地鐵");
+  if (s.includes("巴士")) t.push("🚌 巴士");
+  if (s.includes("高速")) t.push("🚌 高速");
+  if (s.includes("步行")) t.push("🚶 步行");
+  if (s.includes("計程車")) t.push("🚕 計程車");
 
-  if (note.includes("JR")) tags.push("🚆 JR");
-  if (note.includes("巴士")) tags.push("🚌 巴士");
-  if (note.includes("地鐵")) tags.push("🚇 地鐵");
-  if (note.includes("步行")) tags.push("🚶 步行");
-  if (note.includes("高速")) tags.push("🚌 高速巴士");
-
-  return tags;
+  // 也支援你直接寫「🚇地鐵、🚌巴士」這種
+  return t;
 }
+
 
 // =================
 // 🎨 UI
@@ -236,9 +238,77 @@ left.appendChild(wrap);
         text.style.color = "#999";
       }
 
-      left.appendChild(cb);
-      left.appendChild(text);
+      // left 容器
+const left = document.createElement("div");
+left.style.display = "flex";
+left.style.alignItems = "flex-start";
+left.style.gap = "10px";
+left.style.flex = "1";
 
+// checkbox
+const cb = document.createElement("input");
+cb.type = "checkbox";
+cb.checked = act.done;
+cb.style.transform = "scale(1.4)";
+cb.style.marginTop = "6px";
+
+cb.onchange = async () => {
+  act.done = cb.checked;
+  render();
+  await updateActivity(act.id, cb.checked);
+};
+
+// 文字 + tags 的整包
+const info = document.createElement("div");
+info.style.flex = "1";
+
+// 主文字
+const main = document.createElement("div");
+main.innerText = `${act.name} ¥${act.cost}`;
+main.style.fontSize = "20px";
+main.style.fontWeight = "600";
+main.style.lineHeight = "1.25";
+
+// tags 區
+const tagWrap = document.createElement("div");
+tagWrap.style.marginTop = "8px";
+tagWrap.style.display = "flex";
+tagWrap.style.flexWrap = "wrap";
+tagWrap.style.gap = "6px";
+
+// ✅ 1) 分類 tag（食物/景點/交通/飯店）
+const catTag = document.createElement("span");
+catTag.innerText = act.category;
+catTag.style.fontSize = "12px";
+catTag.style.padding = "4px 10px";
+catTag.style.borderRadius = "999px";
+catTag.style.background = "#eef2ff";
+catTag.style.color = "#3730a3";
+tagWrap.appendChild(catTag);
+
+// ✅ 2) 備註 tag（JR/巴士/地鐵/步行…）
+parseNoteTags(act.note).forEach(t => {
+  const tag = document.createElement("span");
+  tag.innerText = t;
+  tag.style.fontSize = "12px";
+  tag.style.padding = "4px 10px";
+  tag.style.borderRadius = "999px";
+  tag.style.background = "#f1f5f9";
+  tag.style.color = "#334155";
+  tagWrap.appendChild(tag);
+});
+
+info.appendChild(main);
+info.appendChild(tagWrap);
+
+if (act.done) {
+  main.style.textDecoration = "line-through";
+  main.style.color = "#9ca3af";
+}
+
+left.appendChild(cb);
+left.appendChild(info);
+      
       const mapBtn = document.createElement("button");
       mapBtn.innerText = "📍";
       mapBtn.style.border = "none";
