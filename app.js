@@ -67,13 +67,12 @@ function convertSheetToAppData(data) {
         activities: activities
           .filter(a => a.dayId === d.dayId)
           .map(a => ({
-            id: a.activityId,
-            name: a.name,
-            cost: Number(a.cost) || 0,
-            done: a.done === true || a.done === "TRUE",
-            map: a.map || "",
-            category: a.category || "其他"
-          }))
+  id: a.activityId,
+  name: a.name,
+  cost: Number(a.cost) || 0,
+  done: a.done === true || a.done === "TRUE",
+  category: a.category || "其他"   // ⭐加這行
+}))
       }));
 
     // 💰 預算
