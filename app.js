@@ -14,6 +14,22 @@ async function init() {
   render();
 }
 init();
+window.addEventListener("resize", () => {
+  render();
+});
+init();
+
+// ⭐⭐⭐ 放這裡（全域區）⭐⭐⭐
+let resizeTimer;
+
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    render();
+  }, 150);
+});
+
+
 
 // =================
 // JSONP
@@ -105,7 +121,8 @@ function renderPlan(container){
   track.style.transition="0.4s";
   slider.appendChild(track);
 
-  const width = window.innerWidth;
+  let width = 0;
+  
 
   project.days.forEach(day=>{
     const page = document.createElement("div");
@@ -251,19 +268,25 @@ function renderPlan(container){
   });
 
   container.appendChild(slider);
-  // ⭐⭐⭐ 修正滑動位置 ⭐⭐
-// ⭐⭐⭐ 就放這裡 ⭐⭐⭐
-track.style.transform = `translateX(-${currentDayIndex * width}px)`;
+
+// ⭐⭐⭐關鍵修正⭐⭐⭐
+requestAnimationFrame(() => {
+  width = slider.clientWidth;
+  track.style.transform = `translateX(-${currentDayIndex * width}px)`;
+});
   // 滑動
   let start=0;
   slider.ontouchstart=e=>start=e.touches[0].clientX;
-  slider.ontouchend=e=>{
-    let diff=start-e.changedTouches[0].clientX;
-    if(diff>50) currentDayIndex++;
-    if(diff<-50) currentDayIndex--;
-    currentDayIndex=Math.max(0,Math.min(currentDayIndex,project.days.length-1));
-    track.style.transform=`translateX(-${currentDayIndex*width}px)`;
-  };
+  slider.ontouchend = e => {
+  const diff = start - e.changedTouches[0].clientX;
+
+  if (diff > 50) currentDayIndex++;
+  if (diff < -50) currentDayIndex--;
+
+  currentDayIndex = Math.max(0, Math.min(currentDayIndex, project.days.length - 1));
+
+  track.style.transform = `translateX(-${currentDayIndex * width}px)`;
+};
 
 }
 
