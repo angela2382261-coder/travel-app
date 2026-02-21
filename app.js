@@ -165,8 +165,20 @@ function render() {
         await updateActivity(act.id, cb.checked);
       };
 
-      const tag = document.createElement("span");
-      tag.className = "tag " + act.category;
+     const tag = document.createElement("span");
+
+// 顯示文字（中文）
+tag.innerText = act.category;
+
+// class 用英文（穩定）
+let cls = "other";
+
+if (act.category === "食物") cls = "food";
+else if (act.category === "景點") cls = "spot";
+else if (act.category === "交通") cls = "transport";
+else if (act.category === "飯店") cls = "hotel";
+
+tag.className = "tag " + cls;
 
       const text = document.createElement("span");
       text.innerText = `${act.name} ¥${act.cost}`;
