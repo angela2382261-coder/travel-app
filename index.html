@@ -14,6 +14,98 @@
   <link rel="apple-touch-icon" href="icon.png">
 
   <title>Travel App</title>
+
+<style>
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont;
+    background: #f2f2f7;
+  }
+
+  #app {
+    max-width: 500px;
+    margin: auto;
+  }
+
+  /* 💰 總卡片 */
+  .card-summary {
+    background: white;
+    margin: 15px;
+    padding: 15px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  /* 📅 每天卡片 */
+  .card-day {
+    background: white;
+    margin: 15px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+
+  /* 📌 標題 */
+  .day-header {
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    background: #fafafa;
+    cursor: pointer;
+  }
+
+  /* 🧾 活動 */
+  .activity {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-top: 1px solid #eee;
+    font-size: 16px;
+  }
+
+  .activity-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* ✅ 已完成 */
+  .done {
+    text-decoration: line-through;
+    color: #999;
+  }
+
+  /* 📍 地圖按鈕 */
+  .map-btn {
+    border: none;
+    background: #eee;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
+  /* 🏷️ 分類標籤 */
+  .tag {
+    font-size: 12px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    margin-right: 5px;
+  }
+
+  .food { background: #ffe4e6; }
+  .spot { background: #e0f2fe; }
+  .transport { background: #fef9c3; }
+  .hotel { background: #dcfce7; }
+
+</style>
+  
+
+
+  
+
 </head>
 <body>
 
