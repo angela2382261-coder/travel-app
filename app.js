@@ -170,6 +170,7 @@ function renderPlan(container){
       top.style.gap="12px";
 
       const cb = document.createElement("input");
+      cb.style.marginTop = "4px";
       cb.type="checkbox";
       cb.checked=act.done;
       cb.style.transform="scale(1.2)";
@@ -294,34 +295,149 @@ function renderPlan(container){
 // 統計
 // =================
 function renderStats(container){
-  const p=appData.projects[0];
+  const p = appData.projects[0];
 
-  let total=0;
-  const stats={};
+  let total = 0;
+  const stats = {};
 
   p.days.forEach(d=>{
     d.activities.forEach(a=>{
       if(a.done){
-        total+=a.cost;
-        stats[a.category]=(stats[a.category]||0)+a.cost;
+        total += a.cost;
+        stats[a.category] = (stats[a.category]||0)+a.cost;
       }
     });
   });
 
-  const card=document.createElement("div");
+  const card = document.createElement("div");
   card.style.background="#fff";
   card.style.margin="16px";
   card.style.padding="16px";
   card.style.borderRadius="20px";
+  card.style.boxShadow="0 10px 30px rgba(0,0,0,0.08)";
 
-  card.innerHTML=`💰 ¥${total} / ¥${p.budget.total}`;
+  // ===== 標題 =====
+  const title = document.createElement("div");
+  title.innerText = "📊 花費統計";
+  title.style.fontSize="22px";
+  title.style.fontWeight="800";
+  title.style.marginBottom="10px";
+  card.appendChild(title);
 
-  Object.entries(stats).forEach(([k,v])=>{
-    const div=document.createElement("div");
-    div.innerText=`${k} ¥${v}`;
-    card.appendChild(div);
-  });
+  // ===== summary =====
+  const summary = document.createElement("div");
+  summary.innerHTML = `💰 ¥${total.toLocaleString()} / ¥${p.budget.total}`;
+  summary.style.marginBottom="12px";
+  summary.style.fontSize="16px";
+  card.appendChild(summary);
 
+  // ===== layout =====
+  const layout = document.createElement("div");
+  layout.style.display="flex";
+  layout.style.gap="16px";
+  layout.style.flexWrap="wrap";
+  card.appendChild(layout);
+
+  // ===== canvas =====
+  const canvas = document.createElement("canvas");
+  canvas.width = 220;
+  canvas.height = 220;
+  layout.appendChild(canvas);
+
+  const list = document.createElement("div");
+  list.style.flex="1";
+  layout.appendChild(list);
+
+  const ctx = canvas.getContext("2d");
+
+  const entries = Object.entries(stats);
+  const colors = ["#007aff","#34c759","#ff9500","#ff3b30","#af52de","#5ac8fa"];
+
+  let activeIndex = -1;
+  let progress = 0;
+
+  // ===== 畫圖 =====
+  function draw(){
+    ctx.clearRect(0,0,220,220);
+
+    let start = -Math.PI/2;
+
+    entries.forEach(([cat,amount],i)=>{
+      const angle = (amount/total)*Math.PI*2*progress;
+      const end = start + angle;
+
+      const isActive = i===activeIndex;
+      const bump = isActive ? 10 : 0;
+
+      const mid = (start+end)/2;
+      const bx = Math.cos(mid)*bump;
+      const by = Math.sin(mid)*bump;
+
+      ctx.beginPath();
+      ctx.moveTo(110+bx,110+by);
+      ctx.fillStyle = colors[i%colors.length];
+      ctx.arc(110+bx,110+by,80,start,end);
+      ctx.closePath();
+      ctx.fill();
+
+      start = end;
+    });
+
+    // 中間文字
+    ctx.fillStyle="#111";
+    ctx.font="bold 14px sans-serif";
+    ctx.textAlign="center";
+    ctx.fillText("已花",110,100);
+
+    ctx.font="bold 18px sans-serif";
+    ctx.fillText(`¥${total.toLocaleString()}`,110,125);
+  }
+
+  // ===== 動畫 =====
+  function animate(){
+    progress += 0.05;
+    if(progress>1) progress=1;
+    draw();
+    if(progress<1) requestAnimationFrame(animate);
+  }
+
+  animate();
+
+  // ===== list =====
+  function renderList(){
+    list.innerHTML="";
+
+    entries.forEach(([cat,amount],i)=>{
+      const row = document.createElement("div");
+      row.style.display="flex";
+      row.style.justifyContent="space-between";
+      row.style.padding="8px 0";
+      row.style.cursor="pointer";
+
+      const left = document.createElement("div");
+      left.innerText = cat;
+
+      const right = document.createElement("div");
+      right.innerText = `¥${amount}`;
+
+      if(i===activeIndex){
+        left.style.fontWeight="800";
+        right.style.fontWeight="800";
+      }
+
+      row.onclick=()=>{
+        activeIndex = activeIndex===i ? -1 : i;
+        draw();
+        renderList();
+      };
+
+      row.appendChild(left);
+      row.appendChild(right);
+      list.appendChild(row);
+    });
+  }
+
+  renderList();
   container.appendChild(card);
 }
 
@@ -486,6 +602,12 @@ function openEditor(act){
     sheet.style.transform="translateY(0)";
   },10);
 
+setInterval(async () => {
+  const data = await loadFromSheet();
+  appData = convert(data);
+  render();
+}, 15000); // 每15秒同步
+  
   // ===== 關閉 =====
   function close(){
     overlay.style.opacity="0";
