@@ -92,38 +92,21 @@ function render() {
 
   const project = appData.projects[0];
 
-  // =================
   // 💰 花費
-  // =================
   let total = 0;
-  let stats = {};
-
   project.days.forEach(day => {
     day.activities.forEach(a => {
-      if (a.done) {
-        total += a.cost;
-        stats[a.category] = (stats[a.category] || 0) + a.cost;
-      }
+      if (a.done) total += a.cost;
     });
   });
 
-  // =================
   // 💰 預算卡
-  // =================
   const budget = document.createElement("div");
   budget.className = "budget";
-
-  let html = `💰 ¥${total} / ¥${project.budget.total}<br>`;
-  for (let k in stats) {
-    html += `📊 ${k}：¥${stats[k]}<br>`;
-  }
-
-  budget.innerHTML = html;
+  budget.innerHTML = `💰 ¥${total} / ¥${project.budget.total}`;
   container.appendChild(budget);
 
-  // =================
-  // 🗓 卡片
-  // =================
+  // 🗓 每日卡片
   project.days.forEach((day, index) => {
 
     if (openState[index] === undefined) openState[index] = true;
@@ -137,16 +120,16 @@ function render() {
     header.className = "header";
     header.innerText = `${day.title} (${doneCount}/${day.activities.length})`;
 
+    const content = document.createElement("div");
+    content.className = "content";
+    if (openState[index]) content.classList.add("open");
+
     header.onclick = () => {
       openState[index] = !openState[index];
       render();
     };
 
-    card.appendChild(header);
-
-    const content = document.createElement("div");
-    content.style.display = openState[index] ? "block" : "none";
-
+    // 📌 行程
     day.activities.forEach(act => {
 
       const row = document.createElement("div");
@@ -165,32 +148,31 @@ function render() {
         await updateActivity(act.id, cb.checked);
       };
 
-     const tag = document.createElement("span");
+      // 🏷 分類
+      const tag = document.createElement("span");
+      tag.className = "tag";
 
-// 顯示文字（中文）
-tag.innerText = act.category;
+      if (act.category === "食物") tag.classList.add("food");
+      else if (act.category === "景點") tag.classList.add("spot");
+      else if (act.category === "交通") tag.classList.add("transport");
+      else if (act.category === "飯店") tag.classList.add("hotel");
+      else tag.classList.add("other");
 
-// class 用英文（穩定）
-let cls = "other";
-
-if (act.category === "食物") cls = "food";
-else if (act.category === "景點") cls = "spot";
-else if (act.category === "交通") cls = "transport";
-else if (act.category === "飯店") cls = "hotel";
-
-tag.className = "tag " + cls;
+      tag.innerText = act.category;
 
       const text = document.createElement("span");
       text.innerText = `${act.name} ¥${act.cost}`;
 
       if (act.done) {
-        text.className = "done";
+        text.style.textDecoration = "line-through";
+        text.style.color = "#999";
       }
 
       left.appendChild(cb);
       left.appendChild(tag);
       left.appendChild(text);
 
+      // 📍 地圖
       const mapBtn = document.createElement("button");
       mapBtn.className = "mapBtn";
       mapBtn.innerText = "📍";
@@ -205,10 +187,12 @@ tag.className = "tag " + cls;
       content.appendChild(row);
     });
 
+    card.appendChild(header);
     card.appendChild(content);
     container.appendChild(card);
   });
 }
+ 
 
 // =================
 // 🔄 更新
