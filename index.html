@@ -16,92 +16,73 @@
   <title>Travel App</title>
 
 <style>
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont;
-    background: #f2f2f7;
-  }
+body {
+  margin: 0;
+  background: #f2f2f7;
+  font-family: -apple-system, BlinkMacSystemFont;
+}
 
-  #app {
-    max-width: 500px;
-    margin: auto;
-  }
+/* 容器 */
+#app {
+  padding: 16px;
+}
 
-  /* 💰 總卡片 */
-  .card-summary {
-    background: white;
-    margin: 15px;
-    padding: 15px;
-    border-radius: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    font-size: 18px;
-    font-weight: 500;
-  }
+/* 💰 預算卡 */
+.budget {
+  background: white;
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  font-size: 18px;
+}
 
-  /* 📅 每天卡片 */
-  .card-day {
-    background: white;
-    margin: 15px;
-    border-radius: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    overflow: hidden;
-  }
+/* 📦 卡片 */
+.card {
+  background: white;
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  transition: 0.2s;
+}
 
-  /* 📌 標題 */
-  .day-header {
-    padding: 15px;
-    font-size: 18px;
-    font-weight: bold;
-    background: #fafafa;
-    cursor: pointer;
-  }
+/* ✨ 卡片按壓效果 */
+.card:active {
+  transform: scale(0.97);
+}
 
-  /* 🧾 活動 */
-  .activity {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 15px;
-    border-top: 1px solid #eee;
-    font-size: 16px;
-  }
+/* 📌 標題 */
+.header {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
 
-  .activity-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+/* 📋 行 */
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
 
-  /* ✅ 已完成 */
-  .done {
-    text-decoration: line-through;
-    color: #999;
-  }
+/* checkbox 放大 */
+.row input {
+  transform: scale(1.3);
+}
 
-  /* 📍 地圖按鈕 */
-  .map-btn {
-    border: none;
-    background: #eee;
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 14px;
-  }
-
-  /* 🏷️ 分類標籤 */
-  .tag {
-    font-size: 12px;
-    padding: 3px 6px;
-    border-radius: 6px;
-    margin-right: 5px;
-  }
-
-  .food { background: #ffe4e6; }
-  .spot { background: #e0f2fe; }
-  .transport { background: #fef9c3; }
-  .hotel { background: #dcfce7; }
-
+/* 地圖按鈕 */
+.mapBtn {
+  font-size: 18px;
+  border: none;
+  background: #eee;
+  border-radius: 10px;
+  padding: 6px 10px;
+}
 </style>
-  
 
 
   
