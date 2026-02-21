@@ -188,15 +188,30 @@ function renderPlan(container){
       const name = document.createElement("div");
       name.innerText=act.name;
       name.style.fontWeight="700";
+const price = document.createElement("div");
+price.innerText = `¥${act.cost.toLocaleString()}`;
 
-      const price = document.createElement("div");
-      price.innerText=`¥${act.cost}`;
-      price.style.background="#FFD306";
-      price.style.display="inline-block";
-      price.style.padding="6px 12px";
-      price.style.borderRadius="999px";
-      price.style.marginTop="6px";
+// ⭐ 金色漸層（質感關鍵）
+price.style.background = "linear-gradient(135deg, #fde68a, #facc15)";
 
+// ⭐ 藍色字（iOS感）
+price.style.color = "#1d4ed8";
+
+// ⭐ 膠囊樣式
+price.style.display = "inline-block";
+price.style.padding = "6px 12px";
+price.style.borderRadius = "999px";
+
+// ⭐ 字體
+price.style.fontWeight = "800";
+price.style.fontSize = "14px";
+
+// ⭐ 微陰影（質感↑）
+price.style.boxShadow = "0 2px 6px rgba(0,0,0,0.12)";
+
+// ⭐ 間距
+price.style.marginTop = "6px";
+     
       info.appendChild(name);
       info.appendChild(price);
 
