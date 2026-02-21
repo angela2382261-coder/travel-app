@@ -170,117 +170,113 @@ function renderPlan(container) {
     title.style.fontWeight = "800";
     card.appendChild(title);
 
-    day.activities.forEach((act, i) => {
-
+   day.activities.forEach((act) => {
   const key = act.id;
 
   // =================
-  // 卡片 Row
+  // Row（整列）
   // =================
   const row = document.createElement("div");
   row.style.display = "flex";
-  row.style.justifyContent = "space-between";
-  row.style.alignItems = "center";
+  row.style.flexDirection = "column";   // ⭐ 上面主內容 + 下面 detail
   row.style.padding = "14px 0";
   row.style.borderTop = "1px solid #eee";
 
-  // ⭐⭐⭐ 這段就加在這裡 ⭐⭐⭐
-  row.addEventListener("touchstart", () => {
-    pressTimer = setTimeout(() => openEditor(act), 450);
-  }, { passive: true });
-
-  row.addEventListener("touchend", () => {
-    clearTimeout(pressTimer);
-  }, { passive: true });
-
-  row.addEventListener("touchmove", () => {
-    clearTimeout(pressTimer);
-  }, { passive: true });
   // =================
-  // 上層（主內容）
+  // 主內容 top（checkbox + 文字 + 地圖）
   // =================
   const top = document.createElement("div");
   top.style.display = "flex";
-  top.style.justifyContent = "space-between";
   top.style.alignItems = "center";
+  top.style.gap = "12px";
 
-  // =================
-  // 左側
-  // =================
-  const left = document.createElement("div");
-  left.style.display = "flex";
-  left.style.alignItems = "flex-start";
-  left.style.gap = "12px";
-  left.style.flex = "1";
-
+  // checkbox（固定）
   const cb = document.createElement("input");
   cb.type = "checkbox";
   cb.checked = act.done;
-  cb.style.transform = "scale(1.4)";
-  cb.style.marginTop = "6px";
+  cb.style.transform = "scale(1.35)";
+  cb.style.flex = "0 0 auto";
+  cb.style.marginTop = "2px";
 
-  // ⭐ 勾選動畫
-  cb.onchange = async () => {
-    row.style.transform = "scale(0.97)";
-    row.style.opacity = "0.6";
-
+  cb.onchange = async (e) => {
+    e.stopPropagation(); // ⭐避免勾選也觸發展開
+    // 輕微動畫
+    row.style.transform = "scale(0.98)";
+    row.style.opacity = "0.7";
     setTimeout(() => {
       act.done = cb.checked;
       render();
-    }, 180);
+    }, 120);
 
     await updateActivity(act.id, cb.checked);
   };
 
-  // =================
-  // 文字區
-  // =================
+  // info（可縮，避免爆版）
   const info = document.createElement("div");
-  info.style.flex = "1";
+  info.style.flex = "1 1 auto";
+  info.style.minWidth = "0"; // ⭐關鍵：讓文字可以在 flex 裡縮
+  info.style.display = "flex";
+  info.style.flexDirection = "column";
+  info.style.gap = "8px";
+
+  // 第一行：名稱 + 金額（同一行，金額有底色）
+  const line1 = document.createElement("div");
+  line1.style.display = "flex";
+  line1.style.alignItems = "center";
+  line1.style.gap = "10px";
+  line1.style.minWidth = "0";
 
   const name = document.createElement("div");
   name.innerText = act.name;
   name.style.fontSize = "20px";
-  name.style.fontWeight = "600";
+  name.style.fontWeight = "700";
+  name.style.lineHeight = "1.25";
+  name.style.minWidth = "0";
+  name.style.flex = "1 1 auto";
+  name.style.wordBreak = "break-word";
 
   const price = document.createElement("div");
-  price.innerText = `¥${act.cost.toLocaleString()}`;
-  price.style.fontSize = "16px";
-  price.style.fontWeight = "700";
-  price.style.color = "#2563eb";
+  price.innerText = `¥${Number(act.cost || 0).toLocaleString()}`;
+  price.style.flex = "0 0 auto";
+  price.style.fontSize = "15px";
+  price.style.fontWeight = "800";
+  price.style.padding = "6px 10px";
+  price.style.borderRadius = "999px";
+  price.style.background = "#e0f2fe";     // ⭐金額底色（跟行程區分）
+  price.style.color = "#075985";
 
-  // =================
-  // Tag
-  // =================
+  line1.appendChild(name);
+  line1.appendChild(price);
+
+  // tags
   const tagWrap = document.createElement("div");
-  tagWrap.style.marginTop = "8px";
   tagWrap.style.display = "flex";
   tagWrap.style.flexWrap = "wrap";
   tagWrap.style.gap = "6px";
 
+  // 分類 tag（顏色）
   const catTag = document.createElement("span");
-  catTag.innerText = act.category;
+  catTag.innerText = act.category || "其他";
   catTag.style.fontSize = "12px";
   catTag.style.padding = "5px 10px";
   catTag.style.borderRadius = "999px";
+  catTag.style.fontWeight = "700";
 
   if (act.category === "食物") {
-    catTag.style.background = "#fee2e2";
-    catTag.style.color = "#b91c1c";
+    catTag.style.background = "#fee2e2"; catTag.style.color = "#b91c1c";
   } else if (act.category === "景點") {
-    catTag.style.background = "#dbeafe";
-    catTag.style.color = "#1d4ed8";
+    catTag.style.background = "#dbeafe"; catTag.style.color = "#1d4ed8";
   } else if (act.category === "交通") {
-    catTag.style.background = "#fef3c7";
-    catTag.style.color = "#92400e";
+    catTag.style.background = "#fef3c7"; catTag.style.color = "#92400e";
   } else if (act.category === "飯店") {
-    catTag.style.background = "#dcfce7";
-    catTag.style.color = "#166534";
+    catTag.style.background = "#dcfce7"; catTag.style.color = "#166534";
+  } else {
+    catTag.style.background = "#e5e7eb"; catTag.style.color = "#374151";
   }
 
   tagWrap.appendChild(catTag);
 
-  // ⭐ 備註 tag
+  // 備註 tag（交通方式）
   parseNoteTags(act.note).forEach(t => {
     const tag = document.createElement("span");
     tag.innerText = t;
@@ -292,23 +288,22 @@ function renderPlan(container) {
     tagWrap.appendChild(tag);
   });
 
-  info.appendChild(name);
-  info.appendChild(price);
+  info.appendChild(line1);
   info.appendChild(tagWrap);
 
+  // done 狀態
   if (act.done) {
-    info.style.opacity = "0.5";
     name.style.textDecoration = "line-through";
+    name.style.color = "#9ca3af";
+    price.style.opacity = "0.6";
+    tagWrap.style.opacity = "0.6";
   }
 
-  left.appendChild(cb);
-  left.appendChild(info);
-
-  // =================
-  // 📍 地圖
-  // =================
+  // 地圖按鈕（永遠在最右）
   const mapBtn = document.createElement("button");
   mapBtn.innerText = "📍";
+  mapBtn.style.flex = "0 0 auto";
+  mapBtn.style.marginLeft = "auto";
   mapBtn.style.border = "none";
   mapBtn.style.background = "#f1f5f9";
   mapBtn.style.borderRadius = "14px";
@@ -316,31 +311,33 @@ function renderPlan(container) {
   mapBtn.style.fontSize = "18px";
   mapBtn.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)";
 
-  mapBtn.onclick = () => {
+  mapBtn.onclick = (e) => {
+    e.stopPropagation(); // ⭐避免點📍也展開
     if (act.map) window.open(act.map, "_blank");
   };
 
-  top.appendChild(left);
+  top.appendChild(cb);
+  top.appendChild(info);
   top.appendChild(mapBtn);
 
   // =================
-  // 🔽 展開區（重點🔥）
+  // detail（展開區）
   // =================
   const detail = document.createElement("div");
-  detail.style.maxHeight = expanded[key] ? "200px" : "0";
+  detail.style.maxHeight = expanded[key] ? "220px" : "0";
   detail.style.overflow = "hidden";
-  detail.style.transition = "all 0.3s ease";
+  detail.style.transition = "max-height 0.28s ease";
   detail.style.fontSize = "14px";
-  detail.style.color = "#666";
-  detail.style.paddingLeft = "40px";
+  detail.style.color = "#64748b";
+  detail.style.paddingLeft = "42px"; // 對齊文字區
 
-  detail.innerHTML = `
-    ${act.note ? "📝 " + act.note + "<br>" : ""}
-    ${act.map ? "📍 點右側可開地圖" : ""}
-  `;
+  // 內容
+  const noteText = act.note ? `📝 ${act.note}` : "";
+  const hintText = act.map ? `📍 點右側可開地圖` : "";
+  detail.innerHTML = [noteText, hintText].filter(Boolean).join("<br>");
 
   // =================
-  // 點擊展開
+  // 點一下展開/收合
   // =================
   row.onclick = () => {
     expanded[key] = !expanded[key];
@@ -348,26 +345,27 @@ function renderPlan(container) {
   };
 
   // =================
-  // 長按（未來編輯）
+  // 長按開編輯（只留一份）
   // =================
-  let pressTimer;
+  let pressTimer = null;
 
   row.addEventListener("touchstart", () => {
-    pressTimer = setTimeout(() => {
-      alert("🛠 未來可編輯這筆行程");
-    }, 500);
-  });
+    pressTimer = setTimeout(() => openEditor(act), 450);
+  }, { passive: true });
 
   row.addEventListener("touchend", () => {
     clearTimeout(pressTimer);
-  });
+  }, { passive: true });
 
+  row.addEventListener("touchmove", () => {
+    clearTimeout(pressTimer);
+  }, { passive: true });
+
+  // 組起來
   row.appendChild(top);
   row.appendChild(detail);
-
   card.appendChild(row);
 });
-
     page.appendChild(card);
     track.appendChild(page);
   });
