@@ -374,13 +374,222 @@ function renderPlan(container) {
 // 📊 統計頁（先做保底，不會爆）
 // =================
 function renderStats(container) {
+  const project = appData.projects[0];
+
+  // ====== 計算總花費 + 分類統計（只算 done=true）
+  let totalSpent = 0;
+  const stats = {}; // { category: amount }
+
+  project.days.forEach(day => {
+    day.activities.forEach(a => {
+      if (!a.done) return;
+      totalSpent += a.cost;
+
+      const cat = a.category || "其他";
+      stats[cat] = (stats[cat] || 0) + a.cost;
+    });
+  });
+
+  const budgetTotal = Number(project.budget?.total || 0);
+
+  // ====== 整體卡片
   const card = document.createElement("div");
   card.style.background = "#fff";
   card.style.borderRadius = "20px";
   card.style.margin = "16px";
   card.style.padding = "16px";
   card.style.boxShadow = "0 10px 30px rgba(0,0,0,0.08)";
-  card.innerHTML = "📊 統計頁（下一步我再幫你加圓餅圖）";
+
+  // ====== 標題
+  const h = document.createElement("h2");
+  h.innerText = "📊 花費統計";
+  h.style.margin = "0 0 10px";
+  h.style.fontSize = "26px";
+  h.style.fontWeight = "800";
+  card.appendChild(h);
+
+  // ====== 已花/總預算
+  const summary = document.createElement("div");
+  summary.style.fontSize = "18px";
+  summary.style.marginBottom = "12px";
+  summary.style.lineHeight = "1.5";
+  summary.innerHTML =
+    `💰 已花：<b>¥${totalSpent.toLocaleString()}</b>` +
+    (budgetTotal ? `　/　總預算：<b>¥${budgetTotal.toLocaleString()}</b>` : "");
+  card.appendChild(summary);
+
+  // ====== 進度條（可選）
+  if (budgetTotal > 0) {
+    const barWrap = document.createElement("div");
+    barWrap.style.background = "#f1f1f3";
+    barWrap.style.borderRadius = "999px";
+    barWrap.style.height = "12px";
+    barWrap.style.overflow = "hidden";
+    barWrap.style.marginBottom = "16px";
+
+    const bar = document.createElement("div");
+    const pct = Math.min(totalSpent / budgetTotal, 1);
+    bar.style.width = `${Math.round(pct * 100)}%`;
+    bar.style.height = "100%";
+    bar.style.background = pct >= 1 ? "#ef4444" : "#22c55e";
+
+    barWrap.appendChild(bar);
+    card.appendChild(barWrap);
+  }
+
+  // ====== 圓餅圖 + 列表布局
+  const layout = document.createElement("div");
+  layout.style.display = "flex";
+  layout.style.gap = "16px";
+  layout.style.alignItems = "center";
+  layout.style.flexWrap = "wrap"; // 手機上可換行
+  card.appendChild(layout);
+
+  // ====== 圓餅圖卡
+  const chartWrap = document.createElement("div");
+  chartWrap.style.flex = "0 0 220px";
+  chartWrap.style.display = "flex";
+  chartWrap.style.justifyContent = "center";
+  chartWrap.style.alignItems = "center";
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 220;
+  canvas.height = 220;
+  chartWrap.appendChild(canvas);
+  layout.appendChild(chartWrap);
+
+  // ====== 分類列表
+  const list = document.createElement("div");
+  list.style.flex = "1";
+  list.style.minWidth = "240px";
+  layout.appendChild(list);
+
+  // 如果沒有花費
+  if (totalSpent === 0) {
+    const empty = document.createElement("div");
+    empty.innerText = "目前還沒有勾選任何花費 ✅";
+    empty.style.color = "#666";
+    empty.style.fontSize = "16px";
+    list.appendChild(empty);
+
+    container.appendChild(card);
+    return;
+  }
+
+  // ====== 顏色（固定幾個 iOS 風）
+  const colorPool = ["#007aff", "#34c759", "#ff9500", "#ff3b30", "#af52de", "#5ac8fa", "#ff2d55"];
+  const entries = Object.entries(stats).sort((a, b) => b[1] - a[1]);
+
+  // 用來做「點擊高亮」
+  let activeIndex = -1;
+
+  function drawPie() {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const r = 80;
+
+    let start = -Math.PI / 2;
+
+    entries.forEach(([cat, amount], i) => {
+      const angle = (amount / totalSpent) * Math.PI * 2;
+      const end = start + angle;
+
+      // 高亮：選到的那塊稍微外凸
+      const isActive = i === activeIndex;
+      const bump = isActive ? 8 : 0;
+      const mid = (start + end) / 2;
+
+      const bx = Math.cos(mid) * bump;
+      const by = Math.sin(mid) * bump;
+
+      ctx.beginPath();
+      ctx.moveTo(cx + bx, cy + by);
+      ctx.fillStyle = colorPool[i % colorPool.length];
+      ctx.arc(cx + bx, cy + by, r, start, end);
+      ctx.closePath();
+      ctx.fill();
+
+      // 分隔線
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      start = end;
+    });
+
+    // 中間文字
+    ctx.fillStyle = "#111";
+    ctx.font = "700 16px -apple-system";
+    ctx.textAlign = "center";
+    ctx.fillText("已花", cx, cy - 6);
+
+    ctx.fillStyle = "#111";
+    ctx.font = "800 18px -apple-system";
+    ctx.fillText(`¥${totalSpent.toLocaleString()}`, cx, cy + 18);
+  }
+
+  function renderList() {
+    list.innerHTML = "";
+
+    entries.forEach(([cat, amount], i) => {
+      const pct = Math.round((amount / totalSpent) * 100);
+
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.justifyContent = "space-between";
+      row.style.padding = "10px 0";
+      row.style.borderTop = "1px solid #eee";
+      row.style.cursor = "pointer";
+
+      // 左：色塊 + 名稱
+      const left = document.createElement("div");
+      left.style.display = "flex";
+      left.style.alignItems = "center";
+      left.style.gap = "10px";
+
+      const dot = document.createElement("span");
+      dot.style.width = "10px";
+      dot.style.height = "10px";
+      dot.style.borderRadius = "50%";
+      dot.style.background = colorPool[i % colorPool.length];
+      dot.style.display = "inline-block";
+
+      const name = document.createElement("div");
+      name.style.fontSize = "16px";
+      name.style.fontWeight = i === activeIndex ? "800" : "600";
+      name.style.color = i === activeIndex ? "#111" : "#333";
+      name.innerText = `${cat} (${pct}%)`;
+
+      left.appendChild(dot);
+      left.appendChild(name);
+
+      // 右：金額
+      const right = document.createElement("div");
+      right.style.fontSize = "16px";
+      right.style.fontWeight = i === activeIndex ? "800" : "600";
+      right.style.color = i === activeIndex ? "#111" : "#333";
+      right.innerText = `¥${amount.toLocaleString()}`;
+
+      row.appendChild(left);
+      row.appendChild(right);
+
+      row.onclick = () => {
+        activeIndex = activeIndex === i ? -1 : i;
+        drawPie();
+        renderList();
+      };
+
+      list.appendChild(row);
+    });
+  }
+
+  drawPie();
+  renderList();
+
   container.appendChild(card);
 }
 
