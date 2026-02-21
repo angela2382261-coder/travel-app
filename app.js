@@ -87,17 +87,19 @@ function convert(data) {
 // =================
 // 🎨 UI
 // =================
+
 function render() {
   const container = document.getElementById("app");
   container.innerHTML = "";
-  container.style.padding = "15px";
-  container.style.background = "#f5f5f5";
-  container.style.fontFamily = "-apple-system";
+  container.style.padding = "16px";
+  container.style.background = "#f2f2f7";
+  container.style.fontFamily = "-apple-system, BlinkMacSystemFont";
+  container.style.fontSize = "18px"; // ⭐整體放大
 
   const project = appData.projects[0];
 
   // =================
-  // 📊 花費統計
+  // 📊 花費
   // =================
   let total = 0;
   let stats = {};
@@ -106,96 +108,80 @@ function render() {
     day.activities.forEach(a => {
       if (a.done) {
         total += a.cost;
-
         if (!stats[a.category]) stats[a.category] = 0;
         stats[a.category] += a.cost;
       }
     });
   });
 
-  // =================
-  // 📊 圓餅圖卡片
-  // =================
-  const chartCard = document.createElement("div");
-  chartCard.style.background = "#fff";
-  chartCard.style.borderRadius = "16px";
-  chartCard.style.padding = "15px";
-  chartCard.style.marginBottom = "15px";
-  chartCard.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+  const budget = document.createElement("div");
+  budget.style.background = "#fff";
+  budget.style.padding = "16px";
+  budget.style.borderRadius = "16px";
+  budget.style.marginBottom = "16px";
+  budget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.06)";
+  budget.style.fontSize = "18px";
 
-  const canvas = document.createElement("canvas");
-  canvas.width = 200;
-  canvas.height = 200;
-
-  const ctx = canvas.getContext("2d");
-
-  let start = 0;
-  const colors = ["#60a5fa", "#f87171", "#34d399", "#fbbf24", "#c084fc"];
-
-  let i = 0;
-  for (let k in stats) {
-    const value = stats[k];
-    const angle = (value / total) * Math.PI * 2;
-
-    ctx.beginPath();
-    ctx.moveTo(100, 100);
-    ctx.fillStyle = colors[i % colors.length];
-    ctx.arc(100, 100, 80, start, start + angle);
-    ctx.fill();
-
-    start += angle;
-    i++;
-  }
-
-  chartCard.appendChild(canvas);
-
-  // 分類文字
-  i = 0;
-  for (let k in stats) {
-    const item = document.createElement("div");
-    item.innerHTML = `⬤ ${k}：¥${stats[k]}`;
-    item.style.color = colors[i % colors.length];
-    chartCard.appendChild(item);
-    i++;
-  }
-
-  const totalText = document.createElement("div");
-  totalText.style.marginTop = "10px";
-  totalText.innerHTML = `💰 總花費：¥${total} / ¥${project.budget.total}`;
-  chartCard.appendChild(totalText);
-
-  container.appendChild(chartCard);
+  budget.innerHTML = `💰 ¥${total} / ¥${project.budget.total}`;
+  container.appendChild(budget);
 
   // =================
-  // 🗓 行程卡片
+  // 🗓 每日卡片（可收合🔥）
   // =================
-  project.days.forEach(day => {
+  project.days.forEach((day, index) => {
+
+    let isOpen = true; // ⭐預設展開
+
     const card = document.createElement("div");
-
     card.style.background = "#fff";
-    card.style.borderRadius = "16px";
-    card.style.padding = "15px";
-    card.style.marginBottom = "15px";
-    card.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+    card.style.borderRadius = "18px";
+    card.style.padding = "16px";
+    card.style.marginBottom = "16px";
+    card.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)";
 
     const doneCount = day.activities.filter(a => a.done).length;
 
-    const title = document.createElement("h3");
-    title.innerText = `${day.date}｜${day.title} (${doneCount}/${day.activities.length})`;
-    card.appendChild(title);
+    // =================
+    // 📌 標題（可點擊收合）
+    // =================
+    const header = document.createElement("div");
+    header.style.fontSize = "20px";
+    header.style.fontWeight = "600";
+    header.style.marginBottom = "10px";
+    header.style.cursor = "pointer";
 
+    header.innerText = `${day.title} (${doneCount}/${day.activities.length})`;
+
+    card.appendChild(header);
+
+    const content = document.createElement("div");
+
+    // =================
+    // 📌 點擊收合
+    // =================
+    header.onclick = () => {
+      isOpen = !isOpen;
+      content.style.display = isOpen ? "block" : "none";
+    };
+
+    // =================
+    // 📌 行程
+    // =================
     day.activities.forEach(act => {
+
       const row = document.createElement("div");
       row.style.display = "flex";
       row.style.justifyContent = "space-between";
       row.style.alignItems = "center";
-      row.style.marginBottom = "10px";
+      row.style.padding = "10px 0";
+      row.style.borderBottom = "1px solid #eee";
 
       const left = document.createElement("div");
 
       const cb = document.createElement("input");
       cb.type = "checkbox";
       cb.checked = act.done;
+      cb.style.transform = "scale(1.3)"; // ⭐ checkbox放大
 
       cb.onchange = async () => {
         act.done = cb.checked;
@@ -203,25 +189,8 @@ function render() {
         await updateActivity(act.id, cb.checked);
       };
 
-      // 分類 tag
-      const tag = document.createElement("span");
-      tag.innerText = act.category;
-
-      const colorsMap = {
-        "食物": "#ffe4e6",
-        "景點": "#e0f2fe",
-        "交通": "#fef9c3",
-        "飯店": "#dcfce7",
-        "其他": "#eee"
-      };
-
-      tag.style.background = colorsMap[act.category] || "#eee";
-      tag.style.padding = "2px 8px";
-      tag.style.borderRadius = "8px";
-      tag.style.marginRight = "6px";
-      tag.style.fontSize = "12px";
-
       const text = document.createElement("span");
+      text.style.fontSize = "18px";
       text.innerText = ` ${act.name} ¥${act.cost}`;
 
       if (act.done) {
@@ -230,32 +199,28 @@ function render() {
       }
 
       left.appendChild(cb);
-      left.appendChild(tag);
       left.appendChild(text);
 
-      // 📍 地圖
+      // 📍 地圖按鈕
       const mapBtn = document.createElement("button");
       mapBtn.innerText = "📍";
+      mapBtn.style.fontSize = "18px";
       mapBtn.style.border = "none";
       mapBtn.style.background = "#eee";
-      mapBtn.style.borderRadius = "8px";
-      mapBtn.style.padding = "6px";
-      mapBtn.style.cursor = "pointer";
+      mapBtn.style.borderRadius = "10px";
+      mapBtn.style.padding = "6px 10px";
 
       mapBtn.onclick = () => {
-        if (act.map) {
-          window.open(act.map, "_blank");
-        } else {
-          alert("沒有地圖連結");
-        }
+        if (act.map) window.open(act.map, "_blank");
       };
 
       row.appendChild(left);
       row.appendChild(mapBtn);
 
-      card.appendChild(row);
+      content.appendChild(row);
     });
 
+    card.appendChild(content);
     container.appendChild(card);
   });
 }
