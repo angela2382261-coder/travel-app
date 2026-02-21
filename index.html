@@ -113,6 +113,42 @@ input[type="checkbox"] {
   padding: 8px 12px;
   font-size: 18px;
 }
+
+/* 📱 底部 Tab */
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: #fff;
+  display: flex;
+  border-top: 1px solid #eee;
+  z-index: 100;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding-top: 8px;
+  font-size: 12px;
+  color: #999;
+}
+
+.tab.active {
+  color: #007aff;
+  font-weight: 600;
+}
+
+/* 讓內容不要被 Tab 蓋住 */
+#app {
+  padding-bottom: 80px;
+}
+
+  
+
+  
+
 </style>
 
   
