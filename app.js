@@ -2,6 +2,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbz5z5FS1zxQPShsh52pG8L4
 
 let appData = null;
 let openState = {};
+let currentTab = "plan"; // plan / stats
 
 // =================
 // ⏳ Loading
@@ -86,13 +87,23 @@ function convert(data) {
 // =================
 // 🎨 UI
 // =================
+
 function render() {
   const container = document.getElementById("app");
   container.innerHTML = "";
 
+  if (currentTab === "plan") {
+    renderPlan(container);
+  } else {
+    renderStats(container);
+  }
+
+  renderTabBar();
+}
+
+function renderPlan(container) {
   const project = appData.projects[0];
 
-  // 💰 花費
   let total = 0;
   project.days.forEach(day => {
     day.activities.forEach(a => {
@@ -100,13 +111,11 @@ function render() {
     });
   });
 
-  // 💰 預算卡
   const budget = document.createElement("div");
   budget.className = "budget";
   budget.innerHTML = `💰 ¥${total} / ¥${project.budget.total}`;
   container.appendChild(budget);
 
-  // 🗓 每日卡片
   project.days.forEach((day, index) => {
 
     if (openState[index] === undefined) openState[index] = true;
@@ -129,7 +138,6 @@ function render() {
       render();
     };
 
-    // 📌 行程
     day.activities.forEach(act => {
 
       const row = document.createElement("div");
@@ -148,17 +156,15 @@ function render() {
         await updateActivity(act.id, cb.checked);
       };
 
-      // 🏷 分類
       const tag = document.createElement("span");
       tag.className = "tag";
+      tag.innerText = act.category;
 
       if (act.category === "食物") tag.classList.add("food");
       else if (act.category === "景點") tag.classList.add("spot");
       else if (act.category === "交通") tag.classList.add("transport");
       else if (act.category === "飯店") tag.classList.add("hotel");
       else tag.classList.add("other");
-
-      tag.innerText = act.category;
 
       const text = document.createElement("span");
       text.innerText = `${act.name} ¥${act.cost}`;
@@ -172,18 +178,15 @@ function render() {
       left.appendChild(tag);
       left.appendChild(text);
 
-      // 📍 地圖
       const mapBtn = document.createElement("button");
       mapBtn.className = "mapBtn";
       mapBtn.innerText = "📍";
-
       mapBtn.onclick = () => {
         if (act.map) window.open(act.map, "_blank");
       };
 
       row.appendChild(left);
       row.appendChild(mapBtn);
-
       content.appendChild(row);
     });
 
@@ -192,8 +195,78 @@ function render() {
     container.appendChild(card);
   });
 }
- 
+ function renderStats(container) {
+  const project = appData.projects[0];
 
+  let stats = {};
+  let total = 0;
+
+  project.days.forEach(day => {
+    day.activities.forEach(a => {
+      if (a.done) {
+        total += a.cost;
+
+        if (!stats[a.category]) stats[a.category] = 0;
+        stats[a.category] += a.cost;
+      }
+    });
+  });
+
+  const card = document.createElement("div");
+  card.className = "card";
+
+  const content = document.createElement("div");
+  content.style.padding = "16px";
+
+  content.innerHTML = `<h3>📊 花費統計</h3>`;
+
+  for (let k in stats) {
+    const row = document.createElement("div");
+    row.innerText = `${k}：¥${stats[k]}`;
+    row.style.marginBottom = "8px";
+    content.appendChild(row);
+  }
+
+  const totalDiv = document.createElement("div");
+  totalDiv.style.marginTop = "10px";
+  totalDiv.innerHTML = `💰 總計：¥${total}`;
+  content.appendChild(totalDiv);
+
+  card.appendChild(content);
+  container.appendChild(card);
+}
+function renderTabBar() {
+  let old = document.querySelector(".tabbar");
+  if (old) old.remove();
+
+  const tabbar = document.createElement("div");
+  tabbar.className = "tabbar";
+
+  const tab1 = document.createElement("div");
+  tab1.className = "tab";
+  tab1.innerHTML = "🗓<br>行程";
+  if (currentTab === "plan") tab1.classList.add("active");
+
+  tab1.onclick = () => {
+    currentTab = "plan";
+    render();
+  };
+
+  const tab2 = document.createElement("div");
+  tab2.className = "tab";
+  tab2.innerHTML = "📊<br>統計";
+  if (currentTab === "stats") tab2.classList.add("active");
+
+  tab2.onclick = () => {
+    currentTab = "stats";
+    render();
+  };
+
+  tabbar.appendChild(tab1);
+  tabbar.appendChild(tab2);
+
+  document.body.appendChild(tabbar);
+}
 // =================
 // 🔄 更新
 // =================
