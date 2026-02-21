@@ -251,10 +251,9 @@ function renderPlan(container){
   });
 
   container.appendChild(slider);
-  // ⭐⭐⭐ 修正滑動位置 ⭐⭐⭐
-requestAnimationFrame(() => {
-  track.style.transform = `translateX(-${currentDayIndex * width}px)`;
-});
+  // ⭐⭐⭐ 修正滑動位置 ⭐⭐
+// ⭐⭐⭐ 就放這裡 ⭐⭐⭐
+track.style.transform = `translateX(-${currentDayIndex * width}px)`;
   // 滑動
   let start=0;
   slider.ontouchstart=e=>start=e.touches[0].clientX;
