@@ -144,7 +144,9 @@ function renderPlan(container){
     card.style.background="#fff";
     card.style.borderRadius="26px";
     card.style.padding="18px";
-    card.style.boxShadow="0 10px 30px rgba(0,0,0,0.12)";
+    card.style.boxShadow = "0 20px 40px rgba(0,0,0,0.12)";
+card.style.border = "1px solid rgba(255,255,255,0.4)";
+card.style.backdropFilter = "blur(10px)";
 
     const title = document.createElement("h2");
     title.innerText=day.title;
@@ -165,6 +167,8 @@ function renderPlan(container){
       row.style.padding="14px 12px";
       row.style.marginTop="10px";
       row.style.borderRadius="14px";
+      row.style.transition = "transform 0.2s ease, opacity 0.2s ease";
+row.style.backdropFilter = "blur(6px)";
 
       // ⭐ 分類背景（重點🔥）
       row.style.background = style.bg;
@@ -209,11 +213,20 @@ function renderPlan(container){
       cb.style.transform="scale(1.2)";
       cb.style.marginTop="4px";
 
-      cb.onchange=async()=>{
-        act.done=cb.checked;
-        render();
-        await updateActivity(act.id, cb.checked);
-      };
+      cb.onchange = async () => {
+
+  row.style.transform = "scale(0.96)";
+  row.style.opacity = "0.5";
+
+  if (navigator.vibrate) navigator.vibrate(10); // iOS 震動
+
+  setTimeout(() => {
+    act.done = cb.checked;
+    render();
+  }, 180);
+
+  await updateActivity(act.id, cb.checked);
+};
 
       const info = document.createElement("div");
       info.style.flex="1";
@@ -234,6 +247,7 @@ function renderPlan(container){
       price.style.fontWeight = "800";
       price.style.fontSize = "14px";
       price.style.marginTop = "6px";
+      price.style.boxShadow = "0 4px 10px rgba(250,204,21,0.5)";
 
       info.appendChild(name);
       info.appendChild(price);
@@ -269,7 +283,9 @@ function renderPlan(container){
       parseNoteTags(act.note).forEach(t=>{
         const tag=document.createElement("span");
         tag.innerText=t;
-        tag.style.background="#eef2ff";
+        tag.style.background = "rgba(255,255,255,0.6)";
+tag.style.backdropFilter = "blur(6px)";
+tag.style.border = "1px solid rgba(255,255,255,0.4)";
         tag.style.padding="4px 8px";
         tag.style.borderRadius="999px";
         tag.style.fontSize="12px";
@@ -304,14 +320,21 @@ function renderPlan(container){
 
   // ===== snap =====
   function snap(){
-    track.style.transform = `translateX(-${currentDayIndex * step}px)`;
+  const pages = track.children;
 
-    const pages = track.children;
-    for(let i=0;i<pages.length;i++){
-      pages[i].style.transform = i===currentDayIndex ? "scale(1)" : "scale(0.94)";
-      pages[i].style.opacity = i===currentDayIndex ? "1" : "0.5";
-    }
+  track.style.transition = "0.5s cubic-bezier(0.22,1,0.36,1)";
+  track.style.transform = `translateX(-${currentDayIndex * step}px)`;
+
+  for(let i=0;i<pages.length;i++){
+    const dist = Math.abs(i - currentDayIndex);
+
+    const scale = 1 - (dist * 0.08);
+    const opacity = 1 - (dist * 0.35);
+
+    pages[i].style.transform = `scale(${Math.max(scale,0.88)})`;
+    pages[i].style.opacity = Math.max(opacity,0.4);
   }
+}
 
   requestAnimationFrame(snap);
 
