@@ -4,7 +4,7 @@ let appData = null;
 
 // ✅ Loading
 function renderLoading() {
-  document.getElementById("app").innerHTML = "⏳ 讀取資料中...";
+  document.getElementById("app").innerHTML = "⏳ 讀取中...";
 }
 
 // ✅ JSONP
@@ -34,12 +34,11 @@ async function init() {
 
 init();
 
-// ✅ 資料轉換
+// ✅ 轉換資料
 function convertSheetToAppData(data) {
   const { projects, days, activities, meta } = data;
 
   const result = {
-    currentProjectId: projects[0].projectId,
     projects: []
   };
 
@@ -77,22 +76,17 @@ function convertSheetToAppData(data) {
   return result;
 }
 
-// ✅ UI 渲染（重點升級版）
+// ✅ UI渲染
 function render() {
   const container = document.getElementById("app");
-
-  // ⭐ App 背景
-  document.body.style.background = "#f5f6f8";
-  document.body.style.fontFamily = "-apple-system, BlinkMacSystemFont, sans-serif";
-
   container.innerHTML = "";
-  container.style.maxWidth = "500px";
-  container.style.margin = "0 auto";
+  container.style.fontFamily = "-apple-system, sans-serif";
   container.style.padding = "15px";
+  container.style.background = "#f5f5f7";
 
   const project = appData.projects[0];
 
-  // ✅ 計算花費
+  // 💰 計算花費
   let total = 0;
   project.days.forEach(day => {
     day.activities.forEach(a => {
@@ -100,53 +94,68 @@ function render() {
     });
   });
 
-  // ✅ 預算卡片（升級）
-  const budget = document.createElement("div");
-  budget.style.background = "#ffffff";
-  budget.style.borderRadius = "16px";
-  budget.style.padding = "15px";
-  budget.style.marginBottom = "15px";
-  budget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
-  budget.innerHTML = `💰 已花：¥${total} / ¥${project.budget.total}`;
-  container.appendChild(budget);
+  // 💰 預算卡
+  const budgetCard = document.createElement("div");
+  budgetCard.style.background = "#fff";
+  budgetCard.style.padding = "15px";
+  budgetCard.style.borderRadius = "16px";
+  budgetCard.style.marginBottom = "15px";
+  budgetCard.style.boxShadow = "0 4px 10px rgba(0,0,0,0.05)";
 
-  // ✅ 標題
+  const percent = project.budget.total
+    ? Math.min(100, (total / project.budget.total) * 100)
+    : 0;
+
+  budgetCard.innerHTML = `
+    <div style="font-weight:bold;margin-bottom:5px;">💰 預算</div>
+    <div>¥${total} / ¥${project.budget.total}</div>
+    <div style="height:8px;background:#eee;border-radius:10px;margin-top:8px;">
+      <div style="
+        width:${percent}%;
+        height:100%;
+        background:#007aff;
+        border-radius:10px;
+      "></div>
+    </div>
+  `;
+
+  container.appendChild(budgetCard);
+
+  // 📌 標題
   const title = document.createElement("h2");
   title.innerText = project.name;
   title.style.marginBottom = "15px";
   container.appendChild(title);
 
-  // ✅ 每一天（卡片）
-  project.days.forEach(day => {
-    const div = document.createElement("div");
+  const today = new Date().toISOString().slice(0, 10);
 
-    // ⭐ 強化卡片感
-    div.style.background = "#ffffff";
-    div.style.borderRadius = "16px";
-    div.style.padding = "15px";
-    div.style.marginBottom = "15px";
-    div.style.boxShadow = "0 6px 16px rgba(0,0,0,0.08)";
+  // 📅 每一天
+  project.days.forEach(day => {
+    const isToday = day.date.includes(today);
+
+    const card = document.createElement("div");
+    card.style.background = isToday ? "#e8f0ff" : "#fff";
+    card.style.borderRadius = "16px";
+    card.style.padding = "15px";
+    card.style.marginBottom = "15px";
+    card.style.boxShadow = "0 4px 12px rgba(0,0,0,0.06)";
 
     const doneCount = day.activities.filter(a => a.done).length;
 
     const h3 = document.createElement("h3");
-    h3.innerText = `${day.date}｜${day.title} (${doneCount}/${day.activities.length})`;
+    h3.innerText = `${day.date.slice(0,10)}｜${day.title} (${doneCount}/${day.activities.length})`;
     h3.style.marginBottom = "10px";
-    div.appendChild(h3);
+    card.appendChild(h3);
 
-    // ✅ 活動列表
     day.activities.forEach(act => {
       const row = document.createElement("div");
-
       row.style.display = "flex";
       row.style.alignItems = "center";
-      row.style.padding = "8px 0";
-      row.style.borderBottom = "1px solid #eee";
+      row.style.marginBottom = "6px";
 
       const cb = document.createElement("input");
       cb.type = "checkbox";
       cb.checked = act.done;
-      cb.style.marginRight = "10px";
 
       cb.onchange = async () => {
         act.done = cb.checked;
@@ -155,7 +164,7 @@ function render() {
       };
 
       const text = document.createElement("span");
-      text.innerText = `${act.name} ¥${act.cost}`;
+      text.innerText = ` ${act.name} ¥${act.cost}`;
 
       if (act.done) {
         text.style.textDecoration = "line-through";
@@ -164,11 +173,10 @@ function render() {
 
       row.appendChild(cb);
       row.appendChild(text);
-
-      div.appendChild(row);
+      card.appendChild(row);
     });
 
-    container.appendChild(div);
+    container.appendChild(card);
   });
 }
 
