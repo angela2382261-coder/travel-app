@@ -9,13 +9,6 @@ let dragItem = null;
 let dragging = false;
 let dragStartY = 0;
 
-// ===== resize debounce =====
-let resizeTimer;
-window.addEventListener("resize", () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => render(), 120);
-});
-
 // ===== init =====
 init();
 
@@ -71,17 +64,6 @@ function convert(data) {
   };
 }
 
-// ===== tag =====
-function parseNoteTags(note) {
-  if (!note) return [];
-  const t = [];
-  if (note.includes("JR")) t.push("🚆 JR");
-  if (note.includes("地鐵")) t.push("🚇 地鐵");
-  if (note.includes("巴士")) t.push("🚌 巴士");
-  if (note.includes("步行")) t.push("🚶 步行");
-  return t;
-}
-
 // ===== render =====
 function render() {
   const app = document.getElementById("app");
@@ -105,16 +87,20 @@ function renderPlan(container) {
 
   const track = document.createElement("div");
   track.style.display = "flex";
-  track.style.transition = "0.4s";
+  track.style.transition = "0.35s ease";
   slider.appendChild(track);
 
-  const pageWidth = window.innerWidth * 0.88;
-  const gap = window.innerWidth * 0.06;
+  // ⭐ iOS 卡片尺寸
+  const pageWidth = Math.round(window.innerWidth * 0.88);
+  const gap = Math.round(window.innerWidth * 0.06);
+  const step = pageWidth + gap;
 
   project.days.forEach((day) => {
     const page = document.createElement("div");
     page.style.width = pageWidth + "px";
-    page.style.margin = `0 ${gap / 2}px`;
+    page.style.marginLeft = gap / 2 + "px";
+    page.style.marginRight = gap / 2 + "px";
+    page.style.flexShrink = "0";
 
     const card = document.createElement("div");
     card.style.background = "#fff";
@@ -170,9 +156,7 @@ function renderPlan(container) {
       row.addEventListener("touchend", () => {
         clearTimeout(pressTimer);
 
-        if (dragging) {
-          finishDrag(day, card);
-        }
+        if (dragging) finishDrag(day, card);
 
         dragging = false;
         dragItem = null;
@@ -210,31 +194,8 @@ function renderPlan(container) {
         info.appendChild(note);
       }
 
-      const tagWrap = document.createElement("div");
-
-      const cat = document.createElement("span");
-      cat.innerText = act.category;
-      cat.style.background = "#eee";
-      cat.style.padding = "4px 8px";
-      cat.style.borderRadius = "999px";
-
-      tagWrap.appendChild(cat);
-
-      parseNoteTags(act.note).forEach((t) => {
-        const tag = document.createElement("span");
-        tag.innerText = t;
-        tag.style.marginLeft = "6px";
-        tag.style.background = "#eef2ff";
-        tag.style.padding = "4px 8px";
-        tag.style.borderRadius = "999px";
-        tagWrap.appendChild(tag);
-      });
-
-      info.appendChild(tagWrap);
-
       top.appendChild(cb);
       top.appendChild(info);
-
       row.appendChild(top);
       card.appendChild(row);
     });
@@ -245,17 +206,19 @@ function renderPlan(container) {
 
   container.appendChild(slider);
 
-  // ===== 滑動 =====
-  let startX = 0;
-
+  // ===== ⭐ 核心修正（不會跑掉） =====
   function snap() {
-    track.style.transform =
-      `translateX(${-(currentDayIndex * (pageWidth + gap)) + gap / 2}px)`;
+    track.style.transform = `translateX(-${currentDayIndex * step}px)`;
   }
 
   requestAnimationFrame(snap);
 
-  slider.ontouchstart = (e) => (startX = e.touches[0].clientX);
+  // ===== 滑動 =====
+  let startX = 0;
+
+  slider.ontouchstart = (e) => {
+    startX = e.touches[0].clientX;
+  };
 
   slider.ontouchend = (e) => {
     const diff = startX - e.changedTouches[0].clientX;
@@ -264,6 +227,7 @@ function renderPlan(container) {
     if (diff < -50) currentDayIndex--;
 
     currentDayIndex = Math.max(0, Math.min(currentDayIndex, project.days.length - 1));
+
     snap();
   };
 }
@@ -305,7 +269,6 @@ function renderTabBar() {
   if (old) old.remove();
 
   const bar = document.createElement("div");
-  bar.className = "tabbar";
   bar.style.position = "fixed";
   bar.style.bottom = "0";
   bar.style.width = "100%";
@@ -329,5 +292,5 @@ function renderTabBar() {
 
 // ===== stats =====
 function renderStats(container) {
-  container.innerHTML = "📊 統計功能（你原本的）";
+  container.innerHTML = "📊 統計功能";
 }
