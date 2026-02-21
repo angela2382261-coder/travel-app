@@ -4,6 +4,9 @@ const API_URL =
 let appData = null;
 let currentTab = "plan";
 let currentDayIndex = 0;
+let dragItem = null;
+let dragStartY = 0;
+let dragging = false;
 
 // ====== resize debounce（只留一份）======
 let resizeTimer = null;
@@ -149,6 +152,7 @@ function renderPlan(container) {
 
     day.activities.forEach((act) => {
       const row = document.createElement("div");
+    row.dataset.id = act.id;  // ⭐⭐⭐ 就放這裡 ⭐⭐⭐
       row.style.display = "flex";
       row.style.flexDirection = "column";
       row.style.padding = "14px 0";
@@ -157,52 +161,60 @@ function renderPlan(container) {
       row.style.userSelect = "none";
 
       // ===== 長按（滑動就取消）=====
-      let pressTimer = null;
-      let startX = 0,
-        startY = 0;
+      let pressTimer;
+let startX = 0;
+let startY = 0;
 
-      row.addEventListener(
-        "touchstart",
-        (e) => {
-          const t = e.touches[0];
-          startX = t.clientX;
-          startY = t.clientY;
+row.addEventListener("touchstart", (e) => {
+  const t = e.touches[0];
+  startX = t.clientX;
+  startY = t.clientY;
 
-          pressTimer = setTimeout(() => {
-            openEditor(act);
-          }, 500);
-        },
-        { passive: true }
-      );
+  pressTimer = setTimeout(() => {
+    // ⭐ 進入拖曳模式
+    dragging = true;
+    dragItem = row;
+    dragStartY = t.clientY;
 
-      row.addEventListener(
-        "touchmove",
-        (e) => {
-          const t = e.touches[0];
-          const dx = Math.abs(t.clientX - startX);
-          const dy = Math.abs(t.clientY - startY);
+    row.style.opacity = "0.5";
+    row.style.transform = "scale(1.05)";
+    row.style.zIndex = "10";
+  }, 400);
+});
 
-          // 手指有移動（不論水平或垂直）就取消長按
-          if (dx > 10 || dy > 10) clearTimeout(pressTimer);
-        },
-        { passive: true }
-      );
+row.addEventListener("touchmove", (e) => {
+  const t = e.touches[0];
 
-      row.addEventListener(
-        "touchend",
-        () => {
-          clearTimeout(pressTimer);
-        },
-        { passive: true }
-      );
+  const dx = Math.abs(t.clientX - startX);
+  const dy = Math.abs(t.clientY - startY);
 
-      row.addEventListener(
-        "touchcancel",
-        () => {
-          clearTimeout(pressTimer);
-        },
-        { passive: true }
-      );
+  // 👉 滑動取消長按
+  if (!dragging && (dx > 10 || dy > 10)) {
+    clearTimeout(pressTimer);
+    return;
+  }
+
+  // ⭐ 拖曳中
+  if (dragging && dragItem) {
+    e.preventDefault();
+
+    const moveY = t.clientY - dragStartY;
+    dragItem.style.transform = `translateY(${moveY}px) scale(1.05)`;
+
+    handleReorder(card, act, moveY);
+  }
+}, { passive: false });
+
+row.addEventListener("touchend", () => {
+  clearTimeout(pressTimer);
+
+  if (dragging) {
+    finishDrag(day);
+  }
+
+  dragging = false;
+  dragItem = null;
+});
 
       // ===== 上排 top =====
       const top = document.createElement("div");
@@ -364,7 +376,8 @@ function renderPlan(container) {
   function snap(animated = true) {
     const w = getWidth();
     track.style.transition = animated ? "transform 0.4s ease" : "none";
-    track.style.transform = `translateX(-${currentDayIndex * w}px)`;
+    const offset = (w * 0.15) / 2; // ⭐ 左右留白補償
+track.style.transform = `translateX(-${currentDayIndex * w}px + ${offset}px)`;
     renderDots();
   }
 
@@ -389,6 +402,43 @@ function renderPlan(container) {
     snap(true);
   };
 }
+//判斷交換位置
+function handleReorder(card, act, moveY) {
+  const rows = Array.from(card.children).filter(el => el !== dragItem);
+
+  for (let target of rows) {
+    const rect = target.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+
+    if (dragItem.getBoundingClientRect().top < mid) {
+      card.insertBefore(dragItem, target);
+      break;
+    } else {
+      card.appendChild(dragItem);
+    }
+  }
+}
+//更新資料順序
+function finishDrag(day) {
+  const newOrder = [];
+
+  const rows = Array.from(document.querySelectorAll("[data-id]"));
+
+  rows.forEach(r => {
+    const id = r.dataset.id;
+    const act = day.activities.find(a => a.id == id);
+    if (act) newOrder.push(act);
+  });
+
+  day.activities = newOrder;
+
+  // reset UI
+  dragItem.style.transform = "";
+  dragItem.style.opacity = "1";
+
+  render();
+}
+
 
 // =================
 // 統計（保留你原本的版本）
